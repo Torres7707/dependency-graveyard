@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dependency Graveyard · Kiroween 2026 项目方案</title>
+<style>
+  :root {
+    --bg: #0e0b14; --panel: #17121f; --raised: #211a2c; --border: #382d49;
+    --text: #ece6f4; --muted: #a79bb8; --accent: #b794f6; --ok: #6fdc8c;
+    --zombie: #9ad06b; --ghost: #7fb7ff; --dead: #9b8fa8; --alive: #ffd66b; --warn: #ffb36b; --bad: #ff7b8a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.8 -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 56px 24px 120px; }
+  h1 { font-size: 32px; margin: 0 0 6px; letter-spacing: -.01em; }
+  h2 { font-size: 22px; margin: 60px 0 14px; padding-top: 10px; border-top: 1px solid var(--border); }
+  h3 { font-size: 17px; margin: 28px 0 6px; }
+  p { margin: 8px 0; }
+  a { color: var(--accent); }
+  code { font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--raised); padding: 1px 6px; border-radius: 4px; }
+  pre { background: #08060d; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto;
+    font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .meta { color: var(--muted); font-size: 14px; }
+  .lead { font-size: 18px; color: var(--text); }
+  .toc { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 22px; margin-top: 24px; }
+  .toc ol { margin: 0; padding-left: 20px; columns: 2; }
+  .box { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+  .note { border-left: 4px solid var(--accent); }
+  .warn { border-left: 4px solid var(--warn); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  .chip { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid currentColor; white-space: nowrap; }
+  .alive { color: var(--alive); } .zombie { color: var(--zombie); } .ghost { color: var(--ghost); } .dead { color: var(--dead); }
+  .stones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+  .stone { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 10px 12px; text-align: center; }
+  .stone svg { width: 64px; height: 76px; display: block; margin: 0 auto 8px; }
+  .stone b { display: block; }
+  .stone small { color: var(--muted); }
+  label.check { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; cursor: pointer; }
+  label.check input { margin-top: 7px; accent-color: var(--accent); }
+  .done { color: var(--muted); text-decoration: line-through; }
+  .tag { font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--raised); color: var(--muted); margin-left: 6px; }
+  .must { color: var(--bad); background: rgba(255,123,138,.12); }
+  details { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; margin: 8px 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  @media (max-width: 720px) { .stones { grid-template-columns: 1fr 1fr; } .toc ol { columns: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Dependency Graveyard</h1>
+<p class="lead">粘贴一份 <code>package.json</code>，你的依赖会变成一座墓地：谁活着，谁成了僵尸，谁是幽灵，谁已经入土。</p>
+<p class="meta">Kiroween 2026 · Costume Contest 类别 · 写给 React 前端开发者的参赛方案 · 生成于 2026-11-10</p>
+
+<div class="toc">
+  <ol>
+    <li><a href="#why">为什么选这个方向</a></li>
+    <li><a href="#product">产品设计</a></li>
+    <li><a href="#tech">技术方案</a></li>
+    <li><a href="#visual">视觉与无障碍</a></li>
+    <li><a href="#kiro">Kiro 使用计划</a></li>
+    <li><a href="#spec1">第一份 spec 草稿</a></li>
+    <li><a href="#rules">规则合规清单</a></li>
+    <li><a href="#timeline">时间表</a></li>
+    <li><a href="#risks">风险与应对</a></li>
+    <li><a href="#score">评分自检</a></li>
+    <li><a href="#submit">提交材料草稿</a></li>
+    <li><a href="#day1">开工第一天</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="why">1. 为什么选这个方向</h2>
+
+<h3>为什么是 Costume Contest</h3>
+<p>评分五项各占 20%：影响力、技术实现、设计、创意、演示。其中设计和演示合占 40%，这正是前端开发者最擅长的部分。Costume Contest 的要求是：应用类型不限，但界面要有<b>能增强功能的诡异设计</b>。它考的是前端完成度，不是后端或架构的广度。</p>
+<table>
+  <tr><th>类别</th><th>对一个人、三周的前端开发者</th></tr>
+  <tr><td>Costume Contest</td><td>最合适。主打界面，应用本身可以很小</td></tr>
+  <tr><td>Resurrection</td><td>要找到一个"让死技术复活"又足够新颖的点，容易撞车</td></tr>
+  <tr><td>Frankenstein</td><td>偏集成与拼装，需要后端和多种技术</td></tr>
+  <tr><td>Skeleton Crew</td><td>要交两个独立应用，工作量翻倍</td></tr>
+</table>
+
+<h3>为什么是"依赖墓地"</h3>
+<ul>
+  <li><b>诡异设计在传达功能</b>：依赖的维护状态用场景来区分（亮灯的墓碑、伸出土的手、飘着的幽灵），信息和装饰是同一件事。这是规则里"增强功能"的字面含义。</li>
+  <li><b>评委零门槛</b>：不用登录，不用 API 密钥，没有模型费用。npm 注册表是公开接口。规则要求项目在评审期（到 2027-01-29）对评委免费开放，这个方案天然满足。</li>
+  <li><b>有真实用途</b>：依赖老化是前端团队的真实问题，"有人会真的用吗"可以回答"会"。</li>
+  <li><b>体量合适</b>：核心是一个页面、一个数据源、一套视觉，一个人三周能做完。</li>
+  <li><b>演示上镜</b>：粘贴 → 墓地展开 → 点开一块墓碑，三分钟视频里的流程很清楚。</li>
+</ul>
+
+<div class="box warn">
+  <b>需要正视的竞争点：</b>依赖健康检查类工具已经不少（<code>npm outdated</code>、Snyk、Bundlephobia 等）。这个项目不靠"检测得更准"取胜，而靠"把枯燥的信息变成一眼能读懂、让人记住的场景"。所以不要把时间花在扩展检测维度上，花在视觉、动效和体验上。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="product">2. 产品设计</h2>
+
+<h3>用户流程</h3>
+<ol>
+  <li>打开首页：一句话说明、一个文本框、一个"用示例试试"按钮（评委一键进入）。</li>
+  <li>粘贴 <code>package.json</code>（或点示例）。</li>
+  <li>页面解析 <code>dependencies</code> 和 <code>devDependencies</code>，逐个查询 npm。</li>
+  <li>墓地逐块"长出来"：查询结果一到，对应的墓碑就出现（流式展示，不是等全部完成）。</li>
+  <li>顶部汇总："42 个依赖：28 活着，6 僵尸，3 幽灵，5 已死。"</li>
+  <li>点击任意墓碑，打开详情：最后发布时间、近一周下载量、deprecated 原因、墓志铭，以及"可以考虑的替代"。</li>
+</ol>
+
+<h3>四种状态</h3>
+<div class="stones">
+  <div class="stone">
+    <svg viewBox="0 0 64 76" aria-hidden="true"><path d="M10 72V28a22 22 0 0 1 44 0v44z" fill="#2a2138" stroke="#ffd66b" stroke-width="2"/><circle cx="32" cy="30" r="8" fill="#ffd66b" opacity=".85"/></svg>
+    <b class="alive">活着</b><small>最近有发布<br/>墓碑亮着灯</small>
+  </div>
+  <div class="stone">
+    <svg viewBox="0 0 64 76" aria-hidden="true"><path d="M10 72V28a22 22 0 0 1 44 0v44z" fill="#2a2138" stroke="#9ad06b" stroke-width="2"/><path d="M24 72c-2-12 2-18 4-22m10 22c1-10 5-16 8-20" stroke="#9ad06b" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+    <b class="zombie">僵尸</b><small>很多人在用<br/>但很久没人维护</small>
+  </div>
+  <div class="stone">
+    <svg viewBox="0 0 64 76" aria-hidden="true"><path d="M12 72V30a20 20 0 0 1 40 0v42l-8-6-8 6-8-6-8 6z" fill="#7fb7ff" opacity=".35" stroke="#7fb7ff" stroke-width="2" stroke-dasharray="4 3"/><circle cx="26" cy="32" r="3" fill="#7fb7ff"/><circle cx="38" cy="32" r="3" fill="#7fb7ff"/></svg>
+    <b class="ghost">幽灵</b><small>被官方标记<br/>deprecated</small>
+  </div>
+  <div class="stone">
+    <svg viewBox="0 0 64 76" aria-hidden="true"><path d="M10 72V28a22 22 0 0 1 44 0v44z" fill="#1a1522" stroke="#9b8fa8" stroke-width="2"/><path d="M24 24h16M32 24v26" stroke="#9b8fa8" stroke-width="3" stroke-linecap="round"/></svg>
+    <b class="dead">已死</b><small>多年没更新<br/>下载量也很低</small>
+  </div>
+</div>
+
+<h3>判断规则（初稿，阈值要用真实数据校准）</h3>
+<table>
+  <tr><th>状态</th><th>规则（按顺序判断）</th></tr>
+  <tr><td><span class="chip ghost">幽灵</span></td><td>最新版本带有 <code>deprecated</code> 字段。优先级最高</td></tr>
+  <tr><td><span class="chip alive">活着</span></td><td>最近 12 个月内有发布</td></tr>
+  <tr><td><span class="chip zombie">僵尸</span></td><td>超过 12 个月没发布，但近一周下载量仍高（初定 ≥ 100,000）</td></tr>
+  <tr><td><span class="chip dead">已死</span></td><td>其余情况：超过 12 个月没发布，下载量也不高</td></tr>
+</table>
+<p class="meta">注意：很多成熟的小库（如 <code>ms</code>）本来就几乎不更新，但完全可用。"没更新"不等于"有问题"，所以文案要用"静止"、"安息"，而不是"危险"、"有漏洞"。详情面板里写明"这只是维护活跃度，不是安全审计"。</p>
+
+<h3>范围：先做什么，后做什么</h3>
+<table>
+  <tr><th>优先级</th><th>功能</th></tr>
+  <tr><td><span class="tag must">必做</span></td><td>粘贴 <code>package.json</code> 解析；示例数据；四种状态判断；墓地渲染；详情面板；汇总栏；移动端可用；键盘可操作；<code>prefers-reduced-motion</code></td></tr>
+  <tr><td>应该做</td><td>墓志铭文案（先用模板，不调模型）；按状态筛选；分享用的静态截图或链接；加载中的"挖坟"动画</td></tr>
+  <tr><td>可选</td><td>支持 <code>pnpm-lock.yaml</code> 或 <code>package-lock.json</code> 看传递依赖；"替代方案"建议；音效（默认静音）</td></tr>
+  <tr><td>不做</td><td>登录、账号、数据库、安全漏洞扫描、自动改文件。范围一大，视觉打磨的时间就没了</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="tech">3. 技术方案</h2>
+
+<h3>建议的栈</h3>
+<ul>
+  <li><b>Next.js（App Router）+ React + TypeScript + Tailwind</b>：和你已经熟悉的一致。部署到 Vercel。</li>
+  <li><b>不用数据库</b>：结果只在浏览器里。</li>
+  <li><b>渲染</b>：墓碑用内联 SVG，雾和光用 CSS 渐变与伪元素。数量大时（几百个依赖）再考虑 canvas。</li>
+  <li><b>测试</b>：Vitest；状态判断用属性测试（<code>fast-check</code>）。</li>
+</ul>
+
+<h3>数据来源（需要先验证）</h3>
+<pre><code>GET https://registry.npmjs.org/&lt;package&gt;
+  → 完整包信息：time[版本] 发布时间、dist-tags.latest、versions[x].deprecated
+
+GET https://api.npmjs.org/downloads/point/last-week/&lt;package&gt;
+  → { downloads: number }</code></pre>
+<div class="box warn">
+  <p><b>开工前先花半小时验证这几件事，别靠假设：</b></p>
+  <ul>
+    <li>浏览器能否直接调用上面两个接口（CORS）？不行就加一个 Next 路由 <code>/api/package/[name]</code> 转发，并设置缓存。</li>
+    <li>完整包信息对大包可能很大（版本历史很长）。看实际体积；太大就在服务端只提取需要的几个字段再返回。</li>
+    <li>下载量接口对作用域包（<code>@scope/name</code>）和批量查询的支持情况。</li>
+    <li>是否有限流，以及一次并发请求多少个合适（建议限制并发 6–8 个）。</li>
+  </ul>
+  <p>验证结果写进 spec 的"设计"部分，别让 Kiro 凭印象写。</p>
+</div>
+
+<h3>需要特别处理的边界</h3>
+<ul>
+  <li>版本写法不是版本号：<code>workspace:*</code>、<code>file:../x</code>、<code>git+https://…</code>、<code>npm:other@1</code>。这些要识别并显示为"本地/私有"，不要去查 npm。</li>
+  <li>包不存在（404）、私有包、网络错误、被限流：每种都要有对应的墓碑或提示，不能静默消失。</li>
+  <li>粘贴的内容不是合法 JSON，或缺少依赖字段：给出清楚的提示。</li>
+  <li>请求竞态：用户连续粘贴两次，旧请求的结果不能写进新墓地（用 AbortController 加按批次的 key）。</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="visual">4. 视觉与无障碍</h2>
+
+<h3>视觉方向</h3>
+<ul>
+  <li><b>一个场景，不是一堆卡片</b>：深紫黑色夜空、远处的树影、前景的雾；墓碑错落排布，像真的墓地，而不是网格。</li>
+  <li><b>状态靠形状和动作区分，不只靠颜色</b>：亮灯、伸出的手、半透明飘动、刻字。</li>
+  <li><b>克制的动效</b>：墓碑"长出来"的错落入场、灯光的缓慢呼吸、幽灵的轻微漂浮。动效服务于信息，不抢信息。</li>
+  <li><b>文案有声音</b>：汇总栏、空状态、错误提示都用统一的"守墓人"口吻，但关键信息保持清楚。</li>
+</ul>
+
+<h3>无障碍（评审"设计"和"影响力"都会看）</h3>
+<ul>
+  <li>所有信息都有文字版：每块墓碑有 <code>aria-label</code>（"react-scripts，僵尸，最后发布于 2022 年 4 月"）；另外提供一个"表格视图"切换，给读屏用户和想看清单的人。</li>
+  <li>键盘：Tab 逐块切换，方向键在墓地里移动，Enter 打开详情，Esc 关闭；焦点样式清晰。</li>
+  <li><code>prefers-reduced-motion</code>：关闭漂浮、呼吸和入场动效，只保留静态画面。</li>
+  <li>对比度：正文和小字对比度不低于 4.5:1（暗色背景上的灰字最容易不达标）。</li>
+  <li>触屏：墓碑点击区域不小于 44px；手机上改为单列滚动或可平移的画布。</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="kiro">5. Kiro 使用计划</h2>
+<p>规则明确说"使用 Kiro 不足会被取消资格"，评分里"技术实现"还专门看你对 Kiro 功能的理解深度。关键是<b>真的用</b>，并且一边做一边记录，最后写成说明。</p>
+
+<table>
+  <tr><th>Kiro 功能</th><th>在这个项目里怎么用</th><th>最后能写的内容</th></tr>
+  <tr>
+    <td>Spec</td>
+    <td>拆成 4–5 份：<code>parse-package-json</code>、<code>fetch-package-health</code>、<code>classify-package</code>、<code>graveyard-scene</code>、<code>detail-panel</code>。每份先写需求，再写设计，再生成任务</td>
+    <td>spec 怎么拆；与"凭感觉对话"相比，哪里更好、哪里更慢</td>
+  </tr>
+  <tr>
+    <td>Steering</td>
+    <td><code>design-system.md</code>（色板、字体、动效规则）、<code>accessibility.md</code>（上面的无障碍清单）、<code>copy-voice.md</code>（守墓人口吻和禁用词）、<code>tech.md</code>（栈和约定）</td>
+    <td>哪一份 steering 对产出质量影响最大</td>
+  </tr>
+  <tr>
+    <td>Hooks</td>
+    <td>保存时跑类型检查和 lint；改了 <code>classify</code> 相关文件时自动跑属性测试；提交前检查 <code>.kiro</code> 没被忽略</td>
+    <td>自动化了哪些流程，省了什么</td>
+  </tr>
+  <tr>
+    <td>属性测试（PBT）</td>
+    <td>状态判断：①单调性：同一个包，越久没更新，状态不会变得更"活"；②幽灵优先：只要带 deprecated，必为幽灵；③穷尽性：任意输入都得到四种状态之一；④解析：任意合法 JSON 的依赖键都不丢。用 <code>fast-check</code></td>
+    <td>PBT 抓到了哪些单元测试想不到的情况（要真跑出来再写）</td>
+  </tr>
+  <tr>
+    <td>MCP</td>
+    <td>用 Fetch 类 MCP 让 Kiro 直接读 npm 注册表文档与真实响应，再据此写类型；如果有设计稿工具的 MCP 也可以试</td>
+    <td>MCP 让哪件事变容易了</td>
+  </tr>
+  <tr>
+    <td>Powers / 自定义 agent</td>
+    <td>先看有没有适合的 power（前端、测试方向）；可以做一个"无障碍审查"自定义 agent，每次改完界面让它按清单检查</td>
+    <td>用了哪些、各自的作用；没用的就别写</td>
+  </tr>
+  <tr>
+    <td>IDE / CLI</td>
+    <td>IDE 用来走 spec 流程，CLI 用来批量重构和跑检查</td>
+    <td>两者怎么分工</td>
+  </tr>
+</table>
+
+<div class="box note">
+  <b>记录方法：</b>在 <code>.kiro/</code> 之外放一个 <code>docs/kiro-log.md</code>，每次用 Kiro 做了什么就记三行：做了什么、Kiro 的表现、你改了什么。三周下来就是"Kiro 使用说明"的原始素材。<br/>
+  <b>诚实原则：</b>只写真正用过的功能。评委会看仓库，写了没用的会扣分，不如少写几项但每项讲透。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="spec1">6. 第一份 spec 草稿（可直接交给 Kiro 细化）</h2>
+<p>Kiro 的需求文档习惯用 EARS 句式（WHEN … THE SYSTEM SHALL …）。下面是 <code>parse-package-json</code> 的需求草稿：</p>
+<pre><code># Requirements: Parse package.json
+
+## User story
+As a front-end developer, I want to paste my package.json and see my
+dependencies listed, so that I can check their health.
+
+## Acceptance criteria
+1. WHEN the user submits text THEN the system SHALL parse it as JSON.
+2. WHEN the text is not valid JSON THEN the system SHALL show a readable
+   error and keep the user's text in the box.
+3. WHEN the JSON has "dependencies" or "devDependencies" THEN the system
+   SHALL return each entry as { name, range, kind }, where kind is
+   "dependency" or "devDependency".
+4. WHEN the JSON has neither field THEN the system SHALL say that no
+   dependencies were found.
+5. WHEN a range starts with "workspace:", "file:", "link:", "git",
+   "http" or contains "/" in a git-like form THEN the system SHALL mark
+   the entry as "non-registry" and SHALL NOT query npm for it.
+6. WHEN a range is "npm:other@1" THEN the system SHALL query the aliased
+   package name.
+7. WHEN the same name appears in both fields THEN the system SHALL keep
+   one entry and mark it as "dependency".
+8. WHEN the input is larger than 1 MB THEN the system SHALL refuse it with
+   a clear message.
+
+## Properties to test (fast-check)
+- Parsing never throws for any string input.
+- Every dependency key in a valid input appears exactly once in the output.
+- Output order is stable for the same input.</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="rules">7. 规则合规清单</h2>
+<p class="meta">勾选状态保存在你的浏览器里（localStorage）。</p>
+
+<div id="checklist">
+  <h3>时间与资格</h3>
+  <label class="check"><input type="checkbox" data-k="reg" /><span>在 kiroween.devpost.com 报名（注册期到 12 月 4 日）</span></label>
+  <label class="check"><input type="checkbox" data-k="credit" /><span>填写 Credit Request Form 申请 4000 Kiro 额度。<b>截止：太平洋时间 12 月 1 日 12:00 = 北京时间 12 月 2 日 04:00</b>；额度须在 12 月 4 日前兑换</span></label>
+  <label class="check"><input type="checkbox" data-k="region" /><span>到 kiro.dev 确认你所在地区可用的 Kiro 功能与模型（规则里有"区域限制"条款，责任在参赛者）</span></label>
+  <label class="check"><input type="checkbox" data-k="new" /><span><b>新建一个空仓库</b>。第一个提交必须晚于太平洋时间 10 月 30 日 9:00（北京时间 10 月 31 日 00:00），不沿用本学习项目的代码</span></label>
+  <label class="check"><input type="checkbox" data-k="disclose" /><span>如果用了脚手架或模板，在说明里披露</span></label>
+
+  <h3>仓库</h3>
+  <label class="check"><input type="checkbox" data-k="public" /><span>GitHub 公开仓库（不能是 GitLab、Bitbucket）</span></label>
+  <label class="check"><input type="checkbox" data-k="license" /><span>根目录有开源许可证文件（如 MIT），并且在仓库 About 区域能看到。<b>许可证类型由你决定</b></span></label>
+  <label class="check"><input type="checkbox" data-k="kirodir" /><span>根目录有 <code>/.kiro</code>（specs、hooks、steering），并且<b>没有</b>写进 <code>.gitignore</code></span></label>
+  <label class="check"><input type="checkbox" data-k="readme" /><span>README 写明安装、运行、测试方法，保证评委能跑起来</span></label>
+  <label class="check"><input type="checkbox" data-k="english" /><span>README、说明、视频字幕等全部英文（或附英文翻译）</span></label>
+  <label class="check"><input type="checkbox" data-k="secrets" /><span>仓库里没有密钥（本项目不需要密钥，更要保持这样）</span></label>
+
+  <h3>应用与演示</h3>
+  <label class="check"><input type="checkbox" data-k="url" /><span>部署到公开 URL（如 Vercel），评委不需要登录，并且到 2027-01-29 前都保持可用</span></label>
+  <label class="check"><input type="checkbox" data-k="free" /><span>应用免费且无限制可用（本项目没有模型费用）</span></label>
+  <label class="check"><input type="checkbox" data-k="video" /><span>演示视频：3 分钟以内，上传到 YouTube 并设为公开，展示在目标设备上运行，不含版权音乐或第三方商标</span></label>
+  <label class="check"><input type="checkbox" data-k="desc" /><span>文字描述：功能说明</span></label>
+  <label class="check"><input type="checkbox" data-k="writeup" /><span>Kiro 使用说明（见第 5 节），写真实用过的功能</span></label>
+  <label class="check"><input type="checkbox" data-k="cat" /><span>在提交表单里选择类别：Costume Contest</span></label>
+
+  <h3>奖励奖（可以叠加；总奖和类别奖二选一）</h3>
+  <label class="check"><input type="checkbox" data-k="blog" /><span>博客奖：在第三方平台公开发文，必须写明是为 Kiroween 2026 黑客松而写，在提交期内发布，并填写 URL（前 100 名，各得 2000 Kiro 额度）</span></label>
+  <label class="check"><input type="checkbox" data-k="social" /><span>Social Blitz：在任意社交平台发帖，<b>帖子必须以 #KiroweenHackathon26 开头</b>，讲你最喜欢的 Kiro 功能和它如何改变你的开发方式，并填写链接</span></label>
+  <label class="check"><input type="checkbox" data-k="student" /><span>学生奖（如果你是在校学生）：队伍所有成员都得是学生；需提供 LinkedIn、学生邮箱、年级专业、学校名</span></label>
+  <label class="check"><input type="checkbox" data-k="ghost" /><span>Ghost of Kiroween Past（如果你报名过 2025 年的 Kiroween）：表单里确认；本项目必须是新建的</span></label>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="timeline">8. 时间表</h2>
+<p><b>截止时间：太平洋时间 12 月 4 日 14:00 = 北京时间 12 月 5 日 06:00。</b>不会延期，也不接受迟交。建议把自己的截止当成 12 月 3 日。</p>
+<table>
+  <tr><th>日期（北京时间）</th><th>内容</th></tr>
+  <tr><td>11/10 – 11/14</td><td>报名；申请额度；验证 npm 接口（CORS、体积、限流）；定视觉方向（画 1–2 张草图）；建新仓库、LICENSE、<code>.kiro/steering</code>；写并确认第一份 spec</td></tr>
+  <tr><td>11/15 – 11/21</td><td>解析、请求、状态判断（含属性测试）。这一周不碰视觉，先让数据通</td></tr>
+  <tr><td>11/22 – 11/28</td><td>墓地场景、墓碑、入场动效、详情面板、示例数据</td></tr>
+  <tr><td>11/29 – 12/1</td><td>无障碍（键盘、读屏、减少动效、对比度）、移动端、性能；部署到 Vercel；<b>12/2 04:00 前确认额度已申请</b></td></tr>
+  <tr><td>12/2 – 12/3</td><td>录视频；写 Kiro 使用说明；发博客和社交帖；填写 Devpost 表单并先保存草稿</td></tr>
+  <tr><td>12/4</td><td>缓冲日。只修问题，不加功能。提交后用无痕窗口再完整试一遍线上链接</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="risks">9. 风险与应对</h2>
+<table>
+  <tr><th>风险</th><th>应对</th></tr>
+  <tr><td>npm 接口不能直接从浏览器调用，或响应过大</td><td>第一天验证；准备服务端转发路由，只返回需要的字段并缓存</td></tr>
+  <tr><td>被 npm 限流，评委演示时失败</td><td>"用示例试试"使用内置的快照数据，不实时请求；实时查询失败时给出明确提示和重试</td></tr>
+  <tr><td>只好看、没有用处</td><td>汇总栏和筛选必须扎实；详情里给出可执行的下一步（"建议关注的替代"）；视频里讲清楚"为谁、解决什么"</td></tr>
+  <tr><td>视觉做不完</td><td>先做一个静态但完整的场景（一种状态），再逐个加状态与动效。任何时刻都保持可部署</td></tr>
+  <tr><td>"没更新"被误解为"不安全"</td><td>文案明确区分"维护活跃度"和"安全"；不使用"危险"、"漏洞"等词</td></tr>
+  <tr><td>Kiro 使用说明写不出内容</td><td>第一天起就记 <code>docs/kiro-log.md</code>；每个功能至少走一次 spec</td></tr>
+  <tr><td>同类项目撞车</td><td>差异化放在场景和体验上，不放在检测深度上</td></tr>
+  <tr><td>最后一天出事故</td><td>12/3 前完成全部提交材料并保存草稿；12/4 只留作缓冲</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="score">10. 评分自检</h2>
+<table>
+  <tr><th>维度（各 20%）</th><th>评委想看到</th><th>这个方案怎么回答</th></tr>
+  <tr><td>影响力</td><td>真实问题，真实用户，有人会用</td><td>依赖老化是日常痛点；零登录，粘贴即用；表格视图和筛选保证实用</td></tr>
+  <tr><td>技术实现</td><td>对 Kiro 多项功能的深入使用与实验</td><td>spec、steering、hooks、PBT、MCP 都有真实记录</td></tr>
+  <tr><td>设计</td><td>完整、统一、打磨过的产品体验</td><td>一个连贯的场景；无障碍；空状态、错误状态都有设计</td></tr>
+  <tr><td>创意</td><td>新颖，与已有概念不同</td><td>把枯燥的健康数据变成可读的墓地隐喻，信息与主题合一</td></tr>
+  <tr><td>演示</td><td>视频端到端展示，讲清楚问题、对象、意义</td><td>3 分钟剧本：痛点 5 秒 → 粘贴 → 墓地展开 → 点开墓碑 → Kiro 怎么做出来的 20 秒</td></tr>
+</table>
+
+<h3>3 分钟视频剧本草稿</h3>
+<ol>
+  <li>0:00–0:15　痛点："你上一次检查依赖是什么时候？"</li>
+  <li>0:15–0:45　粘贴 <code>package.json</code>，墓地逐块长出来，汇总栏跳出统计。</li>
+  <li>0:45–1:30　点开僵尸、幽灵、已死各一块，讲详情里的信息；演示筛选与表格视图。</li>
+  <li>1:30–2:00　无障碍：只用键盘操作；打开"减少动效"；切到手机视图。</li>
+  <li>2:00–2:45　Kiro 是怎么做出来的：展示 spec、steering、hook、属性测试抓到的一个问题。</li>
+  <li>2:45–3:00　链接与口号，收尾。</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 id="submit">11. 提交材料草稿（英文）</h2>
+<details open>
+  <summary>One-line pitch</summary>
+  <p>Paste your package.json and watch your dependencies turn into a graveyard: who is alive, who is a zombie, who is a ghost, and who is long dead.</p>
+</details>
+<details>
+  <summary>Description skeleton</summary>
+  <pre><code>## Problem
+Front-end projects quietly accumulate dependencies that nobody maintains.
+Checking each one by hand is tedious, so it rarely happens.
+
+## What it does
+Dependency Graveyard turns a package.json into a graveyard scene. Each
+dependency is a tombstone whose look shows its maintenance status:
+- Alive: published in the last 12 months
+- Zombie: no release for a year, but still widely downloaded
+- Ghost: officially deprecated on npm
+- Dead: no release for a year and few downloads
+Click a tombstone to see the last release, weekly downloads and the
+deprecation reason. A table view and keyboard navigation make the same
+information available without the visuals.
+
+## Why the spooky design matters
+The scene is the interface: status is read from shape and motion, not
+only from color, and the summary bar and filters work like a legend.
+
+## Built with
+Next.js, React, TypeScript, Tailwind, Vitest, fast-check. No database,
+no login, no API keys. Data comes from the public npm registry.
+
+## How Kiro was used
+(specs / steering / hooks / PBT / MCP: fill in from docs/kiro-log.md)</code></pre>
+</details>
+<details>
+  <summary>Social post (必须以 #KiroweenHackathon26 开头)</summary>
+  <pre><code>#KiroweenHackathon26 My favorite thing about Kiro: &lt;one specific
+feature&gt;. It changed how I build because &lt;one real reason from your log&gt;.
+Built Dependency Graveyard with it: &lt;link&gt;</code></pre>
+</details>
+
+<!-- ============================================================ -->
+<h2 id="day1">12. 开工第一天</h2>
+<ol>
+  <li>建新仓库（GitHub 公开），选 MIT 或你决定的许可证，生成 <code>LICENSE</code>。</li>
+  <li>初始化 Next.js + TypeScript + Tailwind + Vitest + fast-check。</li>
+  <li>建 <code>.kiro/steering/</code>，先写 <code>tech.md</code> 和 <code>design-system.md</code>。</li>
+  <li>在 Kiro 里新建第一份 spec（上面第 6 节的草稿），让 Kiro 细化需求，再进入设计和任务。</li>
+  <li>写一个 30 行的小脚本或测试，真实请求 3 个 npm 包，确认字段、体积和 CORS。把结果写进 spec 的设计部分。</li>
+  <li>建 <code>docs/kiro-log.md</code>，记下今天第一条。</li>
+  <li>第一次提交，之后每天都提交，保持提交历史清晰。</li>
+</ol>
+
+<div class="box note" style="margin-top:36px">
+  <b>一句话原则：</b>数据先通，再做好看；每个功能都走一遍 Kiro 的 spec；每天都能部署；12 月 3 日前交完。
+</div>
+
+<p class="meta" style="margin-top:36px">本文根据 Kiroween 2026 官方规则整理。时间换算：规则中的太平洋时间在 11 月 1 日后为 PST（UTC−8），北京时间 = 太平洋时间 + 16 小时。npm 接口的细节（CORS、响应体积、限流）未经验证，开工时请先实测。</p>
+
+</div>
+
+<script>
+  (function () {
+    var KEY = "graveyard-plan-checklist-v1";
+    var state = {};
+    try { state = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+    document.querySelectorAll("#checklist input[type=checkbox]").forEach(function (box) {
+      var k = box.getAttribute("data-k");
+      var label = box.parentElement.querySelector("span");
+      var sync = function () { label.classList.toggle("done", box.checked); };
+      box.checked = !!state[k];
+      sync();
+      box.addEventListener("change", function () {
+        state[k] = box.checked;
+        sync();
+        try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      });
+    });
+  })();
+</script>
+</body>
+</html>
