@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="ghost-title">
+  <title id="ghost-title">Ghost: a floating sheet ghost</title>
+  <defs>
+    <radialGradient id="ghost-aura-grad">
+      <stop offset="0" stop-color="#9fd8e8" stop-opacity=".5"/>
+      <stop offset=".55" stop-color="#9fd8e8" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#9fd8e8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ghost-body-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6fcfd"/>
+      <stop offset=".7" stop-color="#d4eef4"/>
+      <stop offset="1" stop-color="#a9d6e2"/>
+    </linearGradient>
+  </defs>
+  <style>
+    @media (prefers-reduced-motion: no-preference) {
+      .ghost-aura { transform-box: view-box; transform-origin: 32px 30px; animation: ghost-aura 3s ease-in-out infinite; }
+      .ghost-float { transform-box: view-box; transform-origin: 32px 32px; animation: ghost-float 3s ease-in-out infinite; }
+      .ghost-fade { animation: ghost-fade 3s ease-in-out infinite; }
+      .ghost-tail { animation: ghost-tail 1.6s ease-in-out infinite; }
+      .ghost-eyes { animation: ghost-look 5s ease-in-out infinite; }
+      .ghost-shadow { transform-box: view-box; transform-origin: 32px 61px; animation: ghost-shadow 3s ease-in-out infinite; }
+      .ghost-mote { animation: ghost-twinkle 2.4s ease-in-out infinite; }
+      @keyframes ghost-aura {
+        0%, 100% { opacity: .7; transform: scale(.95); }
+        50% { opacity: 1; transform: scale(1.05); }
+      }
+      @keyframes ghost-float {
+        0%, 100% { transform: translateY(0) rotate(-2deg); }
+        50% { transform: translateY(-3.5px) rotate(2deg); }
+      }
+      @keyframes ghost-fade {
+        0%, 100% { opacity: .95; }
+        50% { opacity: .72; }
+      }
+      @keyframes ghost-tail {
+        0%, 100% { d: path("M14 32 C14 17 22 8 32 8 C42 8 50 17 50 32 L50 49 Q47 55 43 50 Q39 56 35 51 Q31 57 27 51 Q23 56 19 50 Q16 54 14 49 Z"); }
+        50% { d: path("M14 32 C14 17 22 8 32 8 C42 8 50 17 50 32 L51 50 Q48 52 45 50.5 Q41 55 36 52 Q31 54.5 27.5 52.5 Q23 55.5 19.5 51.5 Q15.5 52 13 49 Z"); }
+      }
+      @keyframes ghost-look {
+        0%, 20%, 100% { transform: translate(0, 0); }
+        30%, 45% { transform: translate(-1.6px, .4px); }
+        60%, 75% { transform: translate(1.6px, -.3px); }
+      }
+      @keyframes ghost-shadow {
+        0%, 100% { transform: scale(1); opacity: .35; }
+        50% { transform: scale(.78); opacity: .2; }
+      }
+      @keyframes ghost-twinkle {
+        0%, 100% { opacity: .15; }
+        50% { opacity: .9; }
+      }
+    }
+  </style>
+
+  <circle class="ghost-aura" cx="32" cy="30" r="30" fill="url(#ghost-aura-grad)"/>
+  <ellipse class="ghost-shadow" cx="32" cy="61" rx="12" ry="1.8" fill="#9fd8e8" opacity=".35"/>
+
+  <g class="ghost-float">
+    <g class="ghost-fade" opacity=".95">
+      <path d="M15.5 30 Q8 31 8.5 37 Q9 39 11 38 Q13 35 16 35.5 Z" fill="#e6f6fa" stroke="#1a1424" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M48.5 30 Q56 31 55.5 37 Q55 39 53 38 Q51 35 48 35.5 Z" fill="#e6f6fa" stroke="#1a1424" stroke-width="2" stroke-linejoin="round"/>
+      <path class="ghost-tail" d="M14 32 C14 17 22 8 32 8 C42 8 50 17 50 32 L50 49 Q47 55 43 50 Q39 56 35 51 Q31 57 27 51 Q23 56 19 50 Q16 54 14 49 Z" fill="url(#ghost-body-grad)" stroke="#1a1424" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M19 26 C19 18 23.5 13 29 11.6" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
+
+      <ellipse cx="22.5" cy="31.5" rx="2.6" ry="1.6" fill="#f4a6b8" opacity=".6"/>
+      <ellipse cx="41.5" cy="31.5" rx="2.6" ry="1.6" fill="#f4a6b8" opacity=".6"/>
+      <g class="ghost-eyes">
+        <ellipse cx="26.5" cy="25.5" rx="2.8" ry="3.8" fill="#1a1424"/>
+        <ellipse cx="37.5" cy="25.5" rx="2.8" ry="3.8" fill="#1a1424"/>
+        <circle cx="27.4" cy="24" r="1" fill="#ffffff"/>
+        <circle cx="38.4" cy="24" r="1" fill="#ffffff"/>
+      </g>
+      <ellipse cx="32" cy="34" rx="2.2" ry="2.8" fill="#1a1424"/>
+    </g>
+  </g>
+
+  <g fill="#9fd8e8">
+    <circle class="ghost-mote" cx="9" cy="14" r="1"/>
+    <circle class="ghost-mote" cx="55" cy="17" r="1.2" style="animation-delay:.8s"/>
+    <circle class="ghost-mote" cx="56" cy="46" r=".8" style="animation-delay:1.6s"/>
+    <circle class="ghost-mote" cx="7" cy="48" r=".7" style="animation-delay:1.2s"/>
+  </g>
+</svg>

@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="zombie-title">
+  <title id="zombie-title">Zombie: a hand clawing out of the soil</title>
+  <style>
+    .zombie-finger-o { fill: none; stroke: #1a1424; stroke-width: 6.6; stroke-linecap: round; stroke-linejoin: round; }
+    .zombie-finger-f { fill: none; stroke: #7d9a3c; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .zombie-wrinkle { stroke: #56722a; stroke-width: 1; stroke-linecap: round; }
+    @media (prefers-reduced-motion: no-preference) {
+      .zombie-rise { animation: zombie-rise 1.1s cubic-bezier(.3, 1.45, .5, 1) both; }
+      .zombie-arm { transform-box: view-box; transform-origin: 32px 58px; animation: zombie-sway 2.4s ease-in-out 1.1s infinite; }
+      .zombie-finger { transform-box: view-box; animation: zombie-curl 1.8s ease-in-out infinite; }
+      .zombie-f1 { transform-origin: 27.5px 31px; animation-delay: 0s; }
+      .zombie-f2 { transform-origin: 31.5px 30px; animation-delay: .15s; }
+      .zombie-f3 { transform-origin: 35.5px 30.5px; animation-delay: .3s; }
+      .zombie-f4 { transform-origin: 38.5px 32.5px; animation-delay: .45s; }
+      .zombie-thumb { transform-origin: 26px 36px; animation-name: zombie-thumb; animation-delay: .6s; }
+      .zombie-clod { animation: zombie-clod .9s cubic-bezier(.2, .7, .4, 1) .25s both; }
+      .zombie-clod-l { --dx: -5px; }
+      .zombie-clod-r { --dx: 5px; }
+      @keyframes zombie-rise {
+        from { transform: translateY(38px); }
+        to { transform: translateY(0); }
+      }
+      @keyframes zombie-sway {
+        0%, 100% { transform: rotate(-5deg); }
+        50% { transform: rotate(5deg); }
+      }
+      @keyframes zombie-curl {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(9deg); }
+      }
+      @keyframes zombie-thumb {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(-10deg); }
+      }
+      @keyframes zombie-clod {
+        0% { transform: translate(0, 4px); opacity: 0; }
+        40% { transform: translate(calc(var(--dx, 0px) * .6), -6px); opacity: 1; }
+        100% { transform: translate(var(--dx, 0px), 0); opacity: 1; }
+      }
+    }
+  </style>
+
+  <path d="M6 60 Q20 49 32 50 Q44 49 58 60 Z" fill="#4a3a2d"/>
+
+  <g class="zombie-rise">
+    <g class="zombie-arm">
+      <path d="M26 40 L27 58 L37 58 L38.5 40 Z" fill="#6f8a33" stroke="#1a1424" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M25.4 47.5 L27.6 50 L29.6 47 L32 50 L34.4 47 L36.4 50 L38.6 47.5 L39 58 L25 58 Z" fill="#4b3a6b" stroke="#1a1424" stroke-width="1.6" stroke-linejoin="round"/>
+
+      <g class="zombie-finger zombie-thumb">
+        <path class="zombie-finger-o" d="M26 36 L20 31.5 Q18 29.6 18.4 26.8"/>
+        <path class="zombie-finger-f" d="M26 36 L20 31.5 Q18 29.6 18.4 26.8"/>
+      </g>
+      <g class="zombie-finger zombie-f1">
+        <path class="zombie-finger-o" d="M27.5 31 L25.8 20.5 Q25.3 17.5 22.8 16"/>
+        <path class="zombie-finger-f" d="M27.5 31 L25.8 20.5 Q25.3 17.5 22.8 16"/>
+        <path class="zombie-wrinkle" d="M25 23.6 L27.1 23.3"/>
+      </g>
+      <g class="zombie-finger zombie-f2">
+        <path class="zombie-finger-o" d="M31.5 30 L31.3 16 Q31.2 13 29 11.2"/>
+        <path class="zombie-finger-f" d="M31.5 30 L31.3 16 Q31.2 13 29 11.2"/>
+        <path class="zombie-wrinkle" d="M30.2 21.5 L32.5 21.5"/>
+      </g>
+      <g class="zombie-finger zombie-f3">
+        <path class="zombie-finger-o" d="M35.5 30.5 L37.2 18.5 Q37.6 15.6 36 13.6"/>
+        <path class="zombie-finger-f" d="M35.5 30.5 L37.2 18.5 Q37.6 15.6 36 13.6"/>
+        <path class="zombie-wrinkle" d="M35.6 23 L37.8 23.4"/>
+      </g>
+      <g class="zombie-finger zombie-f4">
+        <path class="zombie-finger-o" d="M38.5 32.5 L42 24.5 Q43 22 42 19.8"/>
+        <path class="zombie-finger-f" d="M38.5 32.5 L42 24.5 Q43 22 42 19.8"/>
+      </g>
+
+      <path d="M24.5 40.5 C23.5 34 24 28.5 27 27.5 C30 26.5 36 26.5 38.5 28 C41 29.5 41 35 39.5 40.5 Z" fill="#7d9a3c" stroke="#1a1424" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M25.6 38.5 C25 35 25.2 31.5 26.6 29.6" fill="none" stroke="#9db85a" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="35.5" cy="31" r="1.6" fill="#56722a"/>
+      <g stroke="#1a1424" stroke-width="1.2" stroke-linecap="round">
+        <path d="M28.5 33.5 L36.5 37"/>
+        <path d="M30 32.9 L29.3 34.9 M32.6 34 L31.9 36 M35.2 35.2 L34.5 37.2"/>
+      </g>
+    </g>
+  </g>
+
+  <path d="M-1 65 L-1 60 Q8 52 18 54.5 Q24 51.5 30 54 Q35 51.5 41 54 Q49 51 56 55 Q61 57 65 60 L65 65 Z" fill="#5a4636" stroke="#1a1424" stroke-width="2" stroke-linejoin="round"/>
+  <g fill="#7a604a">
+    <circle cx="12" cy="59" r="1"/>
+    <circle cx="22" cy="60" r=".8"/>
+    <circle cx="33" cy="58.5" r="1"/>
+    <circle cx="44" cy="59.5" r="1.1"/>
+    <circle cx="52" cy="61" r=".7"/>
+  </g>
+  <path d="M9 56 l-1 -4 M10.5 55.5 l.5 -4.5 M55 57 l1.5 -4 M53.5 56 l-.5 -3.5" stroke="#7d9a3c" stroke-width="1.5" stroke-linecap="round"/>
+  <g fill="#6b5340" stroke="#1a1424" stroke-width="1">
+    <circle class="zombie-clod zombie-clod-l" cx="19" cy="51.5" r="2.2"/>
+    <circle class="zombie-clod zombie-clod-r" cx="45.5" cy="50.5" r="2"/>
+    <circle class="zombie-clod zombie-clod-r" cx="40" cy="48.5" r="1.3"/>
+  </g>
+</svg>

@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Type check and lint on save",
+      "description": "After the agent saves a TypeScript file, run tsc and oxlint. Failures go back to the agent.",
+      "trigger": "PostFileSave",
+      "matcher": "src/.*\\.(ts|tsx)$",
+      "action": { "type": "command", "command": "pnpm -s typecheck && pnpm -s lint" },
+      "timeout": 120
+    }
+  ]
+}

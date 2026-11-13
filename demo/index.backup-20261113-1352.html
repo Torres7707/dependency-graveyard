@@ -1,0 +1,1116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="claude:viewport-fit-sides" content="cover" />
+<title>Dependency Graveyard</title>
+<meta name="description" content="粘贴 package.json，依赖化作墓园：谁活着，谁是僵尸，谁是幽灵，谁已入土。" />
+<style>
+/* ============================================================
+   Design plan — Dependency Graveyard
+   Single dark-committed theme: a night cemetery, eerie + lightly playful.
+   Color: sky ink, indigo-purple, pumpkin amber (warm accent), graveyard green,
+          ghost blue, moss/zombie green, ash grey. No light theme.
+   Type: Cormorant Garamond (engraved serif headlines/epitaphs) +
+        Inter (body/UI/labels) + JetBrains Mono (package.json + versions).
+   Layout: stacked scene — fixed sky/moon/horizon behind, content scrolls above.
+   ============================================================ */
+:root {
+  /* sky + scene */
+  --sky-top: #070713;
+  --sky-mid: #141233;
+  --sky-low: #2a1630;
+  --horizon-glow: rgba(206, 80, 44, .16);
+  --panel: rgba(22, 17, 30, .86);
+  --panel-solid: #17121f;
+  --raised: #211a2c;
+  --border: #4a3d5e;
+  --border-soft: #382d49;
+  /* text */
+  --fg: #ece6f4;
+  --fg-dim: #b4a8c6;
+  --fg-mute: #8d819e;
+  /* accents */
+  --accent: #b794f6;
+  --pumpkin: #ff8a3d;
+  --pumpkin-hot: #ffc36a;
+  --pumpkin-deep: #c4501c;
+  /* status */
+  --alive: #ffd66b;
+  --zombie: #9ad06b;
+  --ghost: #7fb7ff;
+  --dead: #9b8fa8;
+  --bad: #ff7b8a;
+  /* scene surfaces */
+  --grass-dark: #0f1f17;
+  --grass: #1a3327;
+  --soil: #15101a;
+  --stone: #2d2837;
+  --stone-dark: #201a2b;
+  --stone-light: #bca4a0;
+  --moss: #5a7a4f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--sky-top);
+  color: var(--fg);
+  font: 16px/1.7 "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.stone-btn:focus { outline: 3px solid var(--accent); outline-offset: 6px; border-radius: 8px; }
+.stone-btn:focus:not(:focus-visible) { outline-color: var(--accent); }
+
+/* ---------- Fixed scene background ---------- */
+.scene-bg {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  background:
+    radial-gradient(900px 380px at 50% 46%, var(--horizon-glow), transparent 65%),
+    radial-gradient(800px 520px at 82% -5%, rgba(94, 72, 172, .30), transparent 62%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 42%, var(--sky-low) 72%, var(--soil) 100%);
+}
+/* stars */
+.stars { position: absolute; inset: 0; pointer-events: none; }
+.star { position: absolute; border-radius: 50%; background: #d9cef0; }
+.star.cross { background: none; }
+.star.cross::before, .star.cross::after {
+  content: ""; position: absolute; background: #d9cef0; border-radius: 1px;
+}
+.star.cross::before { width: 9px; height: 1.4px; top: 50%; left: 0; transform: translateY(-50%); }
+.star.cross::after { width: 1.4px; height: 9px; left: 50%; top: 0; transform: translateX(-50%); }
+@keyframes twinkle { 0%,100% { opacity: .2; } 50% { opacity: .85; } }
+/* moon */
+.moon {
+  position: absolute; top: 48px; right: clamp(28px, 8vw, 120px);
+  width: 116px; height: 116px; border-radius: 50%; z-index: 0; cursor: pointer;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(120, 95, 68, .3) 0 6%, transparent 7%),
+    radial-gradient(circle at 63% 60%, rgba(120, 95, 68, .26) 0 9%, transparent 10%),
+    radial-gradient(circle at 71% 26%, rgba(120, 95, 68, .2) 0 4%, transparent 5%),
+    radial-gradient(circle at 38% 34%, #fff8e8, #ffd99b 55%, #d3a766 100%);
+  box-shadow: 0 0 48px 12px rgba(255, 211, 138, .32), 0 0 120px 52px rgba(255, 120, 63, .1);
+  transition: box-shadow .3s;
+}
+.moon:hover { box-shadow: 0 0 60px 18px rgba(255, 211, 138, .45), 0 0 150px 70px rgba(255, 120, 63, .16); }
+/* clouds */
+.cloud { position: absolute; z-index: 1; width: 240px; height: 46px; opacity: .5; pointer-events: none;
+  background: radial-gradient(ellipse at 24% 68%, #15142a 0 25%, transparent 26%),
+              radial-gradient(ellipse at 46% 40%, #15142a 0 34%, transparent 35%),
+              radial-gradient(ellipse at 72% 62%, #15142a 0 29%, transparent 30%);
+  filter: blur(2px); animation: cloud-drift 32s linear infinite;
+}
+.cloud.one { top: 78px; right: -140px; }
+.cloud.two { top: 130px; right: 42%; transform: scale(.74); opacity: .34; animation-duration: 44s; animation-direction: reverse; }
+@keyframes cloud-drift { from { translate: 0 0; } to { translate: -380px 8px; } }
+/* bats */
+.bats { position: absolute; z-index: 2; top: 58px; right: clamp(44px, 11vw, 180px); width: 280px; height: 160px; pointer-events: none; overflow: visible; }
+.bat { transform-box: fill-box; transform-origin: center; }
+.bat.fly-a { animation: bat-fly-a 13s linear infinite, bat-flap .6s ease-in-out infinite alternate; }
+.bat.fly-b { animation: bat-fly-b 17s linear -7s infinite, bat-flap .78s ease-in-out infinite alternate; }
+.bat.fly-c { animation: bat-fly-c 21s linear -3s infinite, bat-flap .66s ease-in-out infinite alternate; opacity: .6; }
+@keyframes bat-flap { to { scale: 1 .6; } }
+@keyframes bat-fly-a { from { translate: 30px 56px; } to { translate: -240px 18px; } }
+@keyframes bat-fly-b { from { translate: 180px 10px; } to { translate: -150px 78px; } }
+@keyframes bat-fly-c { from { translate: 120px 90px; } to { translate: -200px 40px; } }
+/* horizon skyline */
+.horizon { position: absolute; left: 0; right: 0; bottom: 150px; height: 260px; z-index: 1; opacity: .85; pointer-events: none; }
+.horizon svg { width: 100%; height: 100%; display: block; }
+/* fence */
+.fence { position: absolute; left: 0; right: 0; bottom: 112px; height: 64px; z-index: 2; opacity: .68; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 36px, #100e1b 37px 40px, transparent 41px 64px); }
+.fence::before, .fence::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; background: #100e1b; }
+.fence::before { top: 26px; } .fence::after { top: 46px; }
+/* mist */
+.mist { position: absolute; left: 0; right: 0; bottom: 84px; height: 170px; z-index: 3; overflow: hidden; opacity: .6; pointer-events: none; }
+.mist::before, .mist::after { content: ""; position: absolute; width: 160%; height: 100%; left: -30%; pointer-events: none;
+  background: radial-gradient(ellipse at 15% 80%, rgba(153, 177, 202, .22) 0 12%, transparent 32%),
+              radial-gradient(ellipse at 42% 72%, rgba(119, 143, 165, .16) 0 14%, transparent 34%),
+              radial-gradient(ellipse at 75% 88%, rgba(184, 197, 211, .18) 0 12%, transparent 32%);
+  filter: blur(10px); animation: mist-drift 34s ease-in-out infinite alternate; }
+.mist::after { opacity: .55; transform: scaleX(-1) translateY(28px); animation-duration: 48s; }
+@keyframes mist-drift { from { translate: -8% 0; } to { translate: 9% -10px; } }
+/* ground */
+.ground { position: absolute; left: 0; right: 0; bottom: 0; height: 440px; z-index: 3; pointer-events: none;
+  background: linear-gradient(180deg, transparent 0 10%, rgba(26, 51, 39, .85) 28%, var(--soil) 66%, #0d0a11 100%); }
+.ground::before { content: ""; position: absolute; top: 72px; left: 0; right: 0; height: 26px;
+  background: radial-gradient(15px 20px at 2% 100%, #2a4a36 95%, transparent 100%) 0 0 / 50px 26px repeat-x; opacity: .9; }
+
+/* ---------- Content layer ---------- */
+.wrap { position: relative; z-index: 5; max-width: 1140px; margin: 0 auto;
+  padding-left: max(22px, env(safe-area-inset-left, 0px));
+  padding-right: max(22px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 140px; }
+
+/* ---------- Header ---------- */
+header.top { text-align: center; margin-bottom: 28px; }
+header.top .eyebrow {
+  font: 600 12px/1 "Inter", sans-serif; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--pumpkin); margin: 0 0 10px; opacity: .85;
+}
+header.top h1 {
+  font: 600 40px/1.15 "Cormorant Garamond", Georgia, "Songti SC", serif;
+  margin: 0 0 8px; letter-spacing: .01em; color: var(--fg);
+}
+header.top h1 .amp { color: var(--pumpkin); font-style: italic; }
+header.top .sub { color: var(--fg-dim); margin: 0 auto; max-width: 46ch; font-size: 15.5px; }
+
+/* ---------- Input slab ---------- */
+.entry {
+  position: relative; overflow: hidden;
+  background: linear-gradient(145deg, rgba(45, 40, 54, .94), rgba(21, 16, 26, .96));
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 22px 22px 20px; box-shadow: inset 0 1px rgba(255, 225, 179, .06), 0 18px 44px rgba(0,0,0,.4);
+}
+.entry::before { content: ""; position: absolute; pointer-events: none; top: -2px; left: 8%; right: 8%; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border-soft) 20%, transparent 40%, var(--border-soft) 60%, transparent 80%, transparent); opacity: .6; }
+.entry label { font-size: 13px; color: var(--fg-dim); display: block; margin-bottom: 10px; }
+.entry label .pkg { font: 13px "JetBrains Mono", ui-monospace, monospace; color: var(--pumpkin-hot); }
+.entry textarea {
+  width: 100%; min-height: 168px; resize: vertical;
+  background: rgba(8, 6, 13, .92); color: var(--fg);
+  border: 1px solid var(--border-soft); border-radius: 10px; padding: 14px 16px;
+  font: 13.5px/1.65 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  box-shadow: inset 0 1px 14px rgba(0,0,0,.5);
+}
+.entry textarea:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 0; }
+.entry .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
+.btn {
+  border: 1px solid var(--border); background: var(--raised); color: var(--fg);
+  padding: 10px 20px; border-radius: 10px; font: 600 14px/1 "Inter", sans-serif; cursor: pointer;
+  transition: border-color .15s, background .15s, transform .1s;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: translateY(1px); }
+.btn.primary {
+  background: linear-gradient(135deg, var(--pumpkin-hot), var(--pumpkin));
+  border-color: #f3a057; color: #24130f;
+  box-shadow: 0 4px 18px rgba(255, 125, 54, .24);
+}
+.btn.primary:hover { background: #ffc784; box-shadow: 0 6px 22px rgba(255, 125, 54, .32); }
+.btn.ghostb { background: transparent; color: var(--fg-dim); }
+.btn.ghostb:hover { color: var(--fg); }
+.entry .hint { color: var(--fg-mute); font-size: 12.5px; margin: 12px 0 0; }
+
+/* ---------- Status line ---------- */
+.statusline { min-height: 28px; margin: 16px 2px 2px; color: var(--fg-dim); font-size: 14.5px; }
+.statusline .pick { color: var(--pumpkin-hot); }
+
+/* ---------- Summary bar ---------- */
+.summarybar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; margin: 8px 0 18px;
+  backdrop-filter: blur(6px);
+}
+.summarybar .big { font: 700 18px/1 "Inter", sans-serif; font-variant-numeric: tabular-nums; }
+.summarybar .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-left: auto; color: var(--fg-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { width: 15px; height: 15px; }
+
+/* ---------- Dig loader ---------- */
+.digbar { height: 10px; border-radius: 999px; background: #211720; border: 1px solid var(--border-soft); overflow: hidden; margin: 16px 0 4px; position: relative; }
+.digbar i { position: absolute; top: 0; bottom: 0; width: 30%; border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--pumpkin), var(--pumpkin-hot), transparent);
+  animation: dig 1.2s infinite linear; }
+.digbar .shovel { position: absolute; top: -16px; color: var(--pumpkin-hot); font-size: 18px; text-shadow: 0 0 10px var(--pumpkin); animation: dig 1.2s infinite linear; }
+@keyframes dig { from { left: -30%; } to { left: 100%; } }
+
+/* ---------- Toolbar ---------- */
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 4px 0 18px; }
+.filt { border: 1px solid var(--border-soft); background: transparent; color: var(--fg-dim);
+  padding: 7px 14px; border-radius: 999px; font: 600 13px/1 "Inter", sans-serif; cursor: pointer; transition: all .15s; }
+.filt:hover { border-color: var(--accent); color: var(--fg); }
+.filt.on { color: var(--fg); border-color: var(--accent); background: rgba(183,148,246,.1); }
+.toolbar .spacer { flex: 1; }
+.toggle { border: 1px solid var(--border-soft); background: transparent; color: var(--fg-dim); padding: 7px 14px; border-radius: 10px; font: 600 13px/1 "Inter", sans-serif; cursor: pointer; }
+.toggle.on { color: var(--fg); border-color: var(--accent); background: rgba(183,148,246,.08); }
+
+/* ---------- Graveyard ---------- */
+.graveyard {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px;
+  padding: 44px 18px 64px; margin: 0 -8px; border-radius: 24px; position: relative;
+  background: radial-gradient(ellipse at 50% 4%, rgba(247,136,63,.08), transparent 40%),
+              linear-gradient(180deg, rgba(26,51,39,.14), rgba(13,12,16,.4));
+}
+.graveyard::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .55; border-radius: 24px;
+  background-image: radial-gradient(circle at 9% 67%, rgba(130,176,126,.28) 0 1px, transparent 2px),
+                    radial-gradient(circle at 32% 37%, rgba(130,176,126,.28) 0 1px, transparent 2px);
+  background-size: 93px 66px, 117px 88px; }
+.stone-btn {
+  background: none; border: none; padding: 0; cursor: pointer; color: var(--fg);
+  text-align: center; position: relative; outline-offset: 6px; min-height: 196px;
+  opacity: 0; transform: translateY(20px) scale(.95); animation: sprout .55s ease forwards;
+}
+@keyframes sprout { to { opacity: 1; transform: translateY(0) scale(1); } }
+.stone-btn .svgwrap { position: relative; margin: 0 auto; width: 146px;
+  transform: translateY(var(--rise, 0px)) rotate(var(--lean, 0deg));
+  transition: transform .2s ease, filter .2s ease; }
+.stone-btn svg { width: 146px; height: 172px; display: block; margin: 0 auto; overflow: visible;
+  filter: drop-shadow(0 18px 14px rgba(0,0,0,.55)); }
+.stone-btn .engrave {
+  position: absolute; top: calc(64px + var(--rise, 0px)); left: 50%; width: 100px;
+  transform: translateX(-50%) rotate(var(--lean, 0deg));
+  font: 600 11.5px/1.25 "JetBrains Mono", ui-monospace, monospace; color: #e2d5c4;
+  text-shadow: 0 2px 2px #000; word-break: break-all; pointer-events: none; text-align: center;
+}
+.stone-btn .engrave small { display: block; margin-top: 28px; font: 400 10px "Inter", sans-serif; color: #cabfb1; text-shadow: 0 1px 2px #000; }
+.stone-btn.depth-back { opacity: .72; } .stone-btn.depth-back .svgwrap { scale: .82; transform-origin: bottom center; }
+.stone-btn.depth-back .engrave { scale: .82; transform-origin: top center; }
+.stone-btn.depth-front { z-index: 2; } .stone-btn.depth-front .svgwrap { scale: 1.06; }
+.stone-btn:hover .svgwrap, .stone-btn:focus-visible .svgwrap {
+  filter: drop-shadow(0 0 14px rgba(255,187,106,.5)) drop-shadow(0 18px 14px rgba(0,0,0,.55));
+  transform: translateY(calc(var(--rise, 0px) - 5px)) rotate(var(--lean, 0deg)) scale(1.04);
+}
+.stone-btn:hover .engrave, .stone-btn:focus-visible .engrave { color: #fff4db; }
+.stone-btn.status-alive .svgwrap { filter: drop-shadow(0 0 12px rgba(255,142,61,.28)) drop-shadow(0 18px 14px rgba(0,0,0,.55)); }
+
+/* SVG sub-animations */
+.flame { transform-box: fill-box; transform-origin: bottom center; animation: flicker 1.4s ease-in-out infinite alternate; }
+@keyframes flicker { from { transform: rotate(-4deg) scale(.86,1.05); opacity: .72; } to { transform: rotate(5deg) scale(1.08,.92); opacity: 1; } }
+.glow { animation: breathe 4s ease-in-out infinite; }
+@keyframes breathe { 0%,100% { opacity:.75; } 50% { opacity:1; } }
+.floaty { animation: floaty 6s ease-in-out infinite; }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.twitch { animation: twitch 5s ease-in-out infinite; transform-origin: 40px 70px; }
+@keyframes twitch { 0%,92%,100% { transform: rotate(0); } 94% { transform: rotate(-2deg); } 96% { transform: rotate(2deg); } }
+.web { animation: web-sway 9s ease-in-out infinite alternate; transform-origin: top left; }
+@keyframes web-sway { from { transform: rotate(-1deg); } to { transform: rotate(2deg); } }
+
+/* crowded (>60 deps): kill per-stone decorative motion */
+.crowded .flame, .crowded .web, .crowded .twitch { animation: none !important; }
+
+/* ---------- Table view ---------- */
+.tableview { display: none; width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px;
+  background: rgba(24,18,31,.7); border-radius: 12px; overflow: hidden; }
+.tableview.show { display: table; }
+.graveyard.hide { display: none; }
+.tableview th, .tableview td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border-soft); }
+.tableview th { color: var(--fg-mute); font: 600 12px "Inter", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+.tableview td { vertical-align: top; }
+.tableview tr:hover td { background: rgba(183,148,246,.04); }
+.chip { font: 700 12px "Inter", sans-serif; padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.chip.alive { color: var(--alive); } .chip.zombie { color: var(--zombie); }
+.chip.ghost { color: var(--ghost); } .chip.dead { color: var(--dead); }
+.chip.local { color: var(--fg-mute); } .chip.err { color: var(--bad); }
+
+/* ---------- Detail dialog ---------- */
+.overlay { position: fixed; inset: 0; background: rgba(5,3,10,.66); display: none; align-items: center; justify-content: center; z-index: 20; padding: 20px; backdrop-filter: blur(3px); }
+.overlay.open { display: flex; }
+.detail {
+  background: linear-gradient(160deg, rgba(37,29,42,.97), rgba(20,16,27,.97));
+  border: 1px solid var(--border); border-radius: 16px; max-width: 540px; width: 100%;
+  padding: 26px 28px; box-shadow: 0 0 0 1px rgba(255,166,91,.1), 0 12px 40px rgba(255,115,48,.14), 0 24px 70px rgba(0,0,0,.6);
+  max-height: 86vh; overflow: auto;
+}
+.detail h2 { margin: 0 0 4px; font: 600 24px/1.2 "Cormorant Garamond", Georgia, "Songti SC", serif; word-break: break-all; letter-spacing: .01em; }
+.detail .ver { color: var(--fg-mute); font: 13px "JetBrains Mono", ui-monospace, monospace; }
+.detail .epi { font: 400 16px/1.6 "Cormorant Garamond", Georgia, serif; font-style: italic; color: var(--fg-dim); margin: 16px 0 18px; border-left: 3px solid var(--pumpkin); padding-left: 14px; }
+.detail dl { margin: 0; }
+.detail dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border-soft); }
+.detail dt { color: var(--fg-mute); font-size: 14px; }
+.detail dd { margin: 0; text-align: right; font: 600 14px "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.detail dd.mute { color: var(--fg-mute); font-weight: 400; font-family: "Inter", sans-serif; }
+.detail .actions { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+.detail .actions .close { margin-left: auto; }
+
+/* ---------- Empty state ---------- */
+.empty { text-align: center; color: var(--fg-mute); padding: 56px 10px; }
+.empty svg { width: 76px; height: 92px; opacity: .5; margin-bottom: 14px; }
+.empty .big { color: var(--fg-dim); font: 600 18px "Cormorant Garamond", serif; }
+.empty .sub { margin-top: 6px; }
+
+/* ---------- Footer ---------- */
+footer.foot { margin-top: 64px; text-align: center; color: var(--fg-mute); font-size: 12.5px; }
+footer.foot a { color: var(--accent); }
+
+/* ---------- Reduced motion ---------- */
+body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after { animation: none !important; transition: none !important; }
+body.reduce-motion .stone-btn { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .stone-btn { opacity: 1; transform: none; }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 720px) {
+  header.top h1 { font-size: 30px; }
+  .moon { width: 70px; height: 70px; right: 24px; top: 26px; }
+  .horizon { display: none; }
+  .bats { scale: .64; transform-origin: right top; }
+  .cloud.two { display: none; }
+  .ground { height: 300px; }
+  .graveyard { margin-left: -4px; margin-right: -4px; padding-left: 6px; padding-right: 6px; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; }
+  .stone-btn { min-height: 162px; }
+  .stone-btn .svgwrap, .stone-btn svg { width: 116px; } .stone-btn svg { height: 138px; }
+  .stone-btn .engrave { top: calc(54px + var(--rise, 0px)); width: 80px; font-size: 10px; }
+  .summarybar .legend { gap: 10px; }
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="scene-bg" aria-hidden="true">
+  <div class="stars" id="stars"></div>
+  <div class="moon" id="moon" title="点击月亮，蝙蝠齐飞"></div>
+  <div class="cloud one"></div>
+  <div class="cloud two"></div>
+  <svg class="bats" id="bats" viewBox="0 0 280 160" aria-hidden="true">
+    <path class="bat fly-a" d="M10 8c7 0 8 7 14 11 6-4 8-11 15-11-2 8-7 12-11 15 4 0 8 2 11 5-7 0-11-2-15-5-4 3-8 5-15 5 3-3 7-5 11-5C16 20 12 16 10 8z" fill="#120f1d"/>
+    <path class="bat fly-b" d="M10 8c7 0 8 7 14 11 6-4 8-11 15-11-2 8-7 12-11 15 4 0 8 2 11 5-7 0-11-2-15-5-4 3-8 5-15 5 3-3 7-5 11-5C16 20 12 16 10 8z" fill="#181321"/>
+    <path class="bat fly-c" d="M10 8c7 0 8 7 14 11 6-4 8-11 15-11-2 8-7 12-11 15 4 0 8 2 11 5-7 0-11-2-15-5-4 3-8 5-15 5 3-3 7-5 11-5C16 20 12 16 10 8z" fill="#15131f"/>
+  </svg>
+  <div class="horizon">
+    <svg viewBox="0 0 1440 260" preserveAspectRatio="none">
+      <path d="M0 260V160l74-22 24 22 17-50 13 50 31-26 26 26 19-68 18 68 54-28 53 28v-26l20-20 20 20v26l45-12 46 12v-50l22-20 22 20v50l64-26 57 26v-94l21-32 21 32v94l48-26 47 26v-42l30-30 30 30v42l58-16 53 16v-66l34-48 34 48v66l39-24 44 24v-34l24-16 24 16v34l54-20 55 20v-60l32-36 32 36v60l66-26 67 26v-60l24-32 24 32v60l64-18 65 18V260z" fill="#0c0f1f"/>
+      <path d="M0 260V190l86-20 60 20 31-76 21 76 88-18 84 18 46-114 16 114 112-16 108 16 47-70 20 70 78-12 74 12 53-98 18 98 85-24 80 24 43-58 19 58 94-24 98 24 47-108 20 108 93-12 104 12v66z" fill="#111425" opacity=".82"/>
+      <path d="M267 260c4-72 4-100-11-126m11 70c-32-26-45-42-54-66m58 44c24-30 42-42 55-72m681 150c1-64-3-100-20-130m17 76c-37-18-51-42-61-66m62 44c28-30 45-44 61-80" fill="none" stroke="#080b14" stroke-width="11" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div class="fence"></div>
+  <div class="mist"></div>
+  <div class="ground"></div>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">npm 维护活跃度可视化</p>
+    <h1>Dependency <span class="amp">Graveyard</span></h1>
+    <p class="sub">粘贴一段 package.json —— 你的依赖会变成一座墓地：谁活着，谁成了僵尸，谁是幽灵，谁已经入土。</p>
+  </header>
+
+  <section class="entry" aria-label="输入你的 package.json">
+    <label for="pkg-input">把 <span class="pkg">package.json</span> 的正文粘贴到这里（或直接用示例）：</label>
+    <textarea id="pkg-input" spellcheck="false" placeholder='{&#10;  "name": "my-app",&#10;  "dependencies": { ... }&#10;}'></textarea>
+    <div class="actions">
+      <button class="btn primary" id="btn-submit" type="button" aria-label="分析 package.json 中的依赖">掘开坟墓</button>
+      <button class="btn ghostb" id="btn-example" type="button">来点陪葬品</button>
+      <button class="btn ghostb" id="btn-clear" type="button">清空</button>
+    </div>
+    <p class="hint">数据来自公开的 npm 注册表。这只是维护活跃度展示，不是安全审计。</p>
+  </section>
+
+  <div class="statusline" id="statusline" role="status" aria-live="polite"></div>
+
+  <section class="summarybar" id="summarybar" hidden>
+    <span class="big" id="sum-total"></span>
+    <span class="legend" id="legend"></span>
+  </section>
+
+  <div class="digbar" id="digbar" aria-hidden="true"><i></i><span class="shovel">⚒</span></div>
+
+  <section class="toolbar" id="toolbar" hidden>
+    <button class="filt on" data-filter="all" type="button">全部</button>
+    <button class="filt" data-filter="alive" type="button">活着</button>
+    <button class="filt" data-filter="zombie" type="button">僵尸</button>
+    <button class="filt" data-filter="ghost" type="button">幽灵</button>
+    <button class="filt" data-filter="dead" type="button">已死</button>
+    <button class="filt" data-filter="local" type="button">本地</button>
+    <button class="filt" data-filter="error" type="button">异常</button>
+    <span class="spacer"></span>
+    <button class="toggle" id="toggle-table" type="button">表格视图</button>
+    <button class="toggle" id="toggle-motion" type="button">减少动效</button>
+  </section>
+
+  <div id="graveyard" class="graveyard" role="list" aria-label="墓地：每块墓碑是一个依赖" tabindex="0"></div>
+
+  <table class="tableview" id="tableview" aria-label="依赖清单表格">
+    <thead>
+      <tr><th>依赖</th><th>类型</th><th>状态</th><th>最后发布</th><th>近一周下载</th><th>说明</th></tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="empty" id="empty">
+    <svg viewBox="0 0 80 96" aria-hidden="true"><ellipse cx="40" cy="88" rx="30" ry="4" fill="#090b0c" opacity=".5"/><path d="M18 86V36a22 22 0 0 1 44 0v50z" fill="#1c1828" stroke="#3a3048" stroke-width="2"/><path d="M30 30h20M40 30v24" stroke="#4a3d5e" stroke-width="3" stroke-linecap="round"/></svg>
+    <div class="big">这里还很安静。</div>
+    <div class="sub">还没有任何依赖。粘贴你的 package.json，或点上方「来点陪葬品」。</div>
+  </div>
+
+  <footer class="foot">Dependency Graveyard · 维护活跃度可视化。数据来自 <a href="https://www.npmjs.com" target="_blank" rel="noopener noreferrer">npm 公开接口</a>。</footer>
+</div>
+
+<!-- 详情面板 -->
+<div class="overlay" id="overlay">
+  <div class="detail" id="detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <h2 id="detail-title"></h2>
+    <div class="ver" id="detail-range"></div>
+    <p class="epi" id="detail-epi"></p>
+    <dl id="detail-dl"></dl>
+    <div class="actions">
+      <a class="btn" id="detail-link" target="_blank" rel="noopener noreferrer">在 npm 查看</a>
+      <a class="btn" id="detail-alt" target="_blank" rel="noopener noreferrer">查找替代</a>
+      <button class="btn primary close" id="detail-close" type="button">关闭 (Esc)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===================== 工具 ===================== */
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ===================== 示例数据 ===================== */
+  var EXAMPLE = JSON.stringify({
+    name: 'demo-app',
+    version: '1.0.0',
+    dependencies: {
+      'react': '^18.2.0',
+      'react-dom': '^18.2.0',
+      'axios': '^1.6.8',
+      'lodash': '^4.17.21',
+      'ms': '^2.1.3',
+      'chalk': '^4.1.2',
+      'express': '^4.19.2',
+      'request': '^2.88.2',
+      'gulp': '^4.0.2',
+      'coffee-script': '^1.12.7',
+      'bower': '^1.8.14'
+    },
+    devDependencies: {
+      'typescript': '^5.4.5',
+      'jest': '^29.7.0',
+      'grunt': '^1.6.1',
+      'karma': '^6.4.4'
+    }
+  }, null, 2);
+
+  /* ===================== 状态元信息与文案 ===================== */
+  var STATUS_META = {
+    alive:  { label: '活着', color: 'var(--alive)', cls: 'alive' },
+    zombie: { label: '僵尸', color: 'var(--zombie)', cls: 'zombie' },
+    ghost:  { label: '幽灵', color: 'var(--ghost)', cls: 'ghost' },
+    dead:   { label: '已死', color: 'var(--dead)', cls: 'dead' }
+  };
+  var EPITAPHS = {
+    alive:   '这座碑还亮着灯。最近 12 个月仍有人发布，可以放心使用。',
+    zombie:  '它仍在被许多人使用，却已经很久没人维护了。',
+    ghost:   '官方已在 npm 上把它标记为 deprecated，正在缓缓退场。',
+    dead:    '久无更新，也少有人问津。愿它安息。',
+    local:   '这是本地 / 私有依赖，无法在 npm 注册表里探访，静静立着。',
+    error:   '它的墓碑破碎了——无法从 npm 读取数据。请检查网络，或稍后再试。',
+    notfound:'在 npm 注册表里找不到这个名字。它或许已被移除，或是私有包。'
+  };
+
+  /* ===================== 解析 package.json ===================== */
+  function isNonRegistryRange(range) {
+    if (typeof range !== 'string' || range.trim() === '') return true;
+    var r = range.trim();
+    if (/^(workspace:|file:|link:|npm:)/.test(r)) return true;
+    if (/^git(\+|:)/.test(r)) return true;
+    if (/^(http|ftp)s?:/.test(r)) return true;
+    if (/^\.{0,2}\//.test(r)) return true;
+    return false;
+  }
+
+  function aliasedName(range) {
+    var s = range.trim();
+    if (!/^npm:/.test(s)) return null;
+    var body = s.slice(4);
+    var at = body.lastIndexOf('@');
+    if (at <= 0) return body;
+    return body.slice(0, at);
+  }
+
+  function parsePackageJson(text) {
+    var obj = JSON.parse(text);
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+      throw new Error('这不是一个 JSON 对象');
+    }
+    var deps = obj.dependencies;
+    var devDeps = obj.devDependencies;
+    if (deps != null && (typeof deps !== 'object' || Array.isArray(deps))) throw new Error('dependencies 不是对象');
+    if (devDeps != null && (typeof devDeps !== 'object' || Array.isArray(devDeps))) throw new Error('devDependencies 不是对象');
+    deps = deps || {}; devDeps = devDeps || {};
+    if (Object.keys(deps).length + Object.keys(devDeps).length === 0) {
+      throw new Error('没有发现任何依赖');
+    }
+    var map = {};
+    function add(name, range, kind) {
+      name = String(name);
+      if (!name) return;
+      var prev = map[name];
+      if (prev && prev.kind === 'dependency') return;
+      map[name] = { name: name, range: String(range), kind: kind };
+    }
+    Object.keys(deps).forEach(function (k) { add(k, deps[k], 'dependency'); });
+    Object.keys(devDeps).forEach(function (k) { add(k, devDeps[k], 'devDependency'); });
+    return Object.keys(map).map(function (k) { return map[k]; });
+  }
+
+  /* ===================== 状态判定（纯函数） ===================== */
+  var ZOMBIE_DL = 100000;
+
+  function monthsSince(lastPublishTime) {
+    if (!lastPublishTime) return Infinity;
+    var t = new Date(lastPublishTime).getTime();
+    return isNaN(t) ? Infinity : (Date.now() - t) / (30.4375 * 24 * 3600 * 1000);
+  }
+
+  function classify(dep) {
+    if (dep.deprecated) return 'ghost';
+    if (monthsSince(dep.lastPublishTime) <= 12) return 'alive';
+    if (dep.weeklyDownloads >= ZOMBIE_DL) return 'zombie';
+    return 'dead';
+  }
+
+  /* ===================== npm 数据拉取 ===================== */
+  function registryUrl(name) { return 'https://registry.npmjs.org/' + name.replace('/', '%2F'); }
+  function downloadsUrl(name) { return 'https://api.npmjs.org/downloads/point/last-week/' + name; }
+
+  async function fetchPackageHealth(name, signal) {
+    var res = await fetch(registryUrl(name), { signal: signal });
+    if (res.status === 404) return { name: name, notFound: true };
+    if (!res.ok) return { name: name, httpError: res.status };
+    var data = await res.json();
+    var latest = data && data['dist-tags'] && data['dist-tags'].latest;
+    var time = (data && data.time) || {};
+    var lastPublishTime = latest ? (time[latest] || time.modified || null) : (time.modified || null);
+    var deprecated = null;
+    if (latest && data.versions && data.versions[latest]) {
+      deprecated = data.versions[latest].deprecated || null;
+    }
+    var weeklyDownloads = 0;
+    try {
+      var dl = await fetch(downloadsUrl(name), { signal: signal });
+      if (dl.ok) {
+        var d = await dl.json();
+        weeklyDownloads = Number(d.downloads) || 0;
+      }
+    } catch (e) {}
+    return { name: name, lastPublishTime: lastPublishTime, weeklyDownloads: weeklyDownloads, deprecated: deprecated };
+  }
+
+  async function runConcurrent(items, limit, worker, onResult) {
+    var i = 0;
+    var n = Math.min(limit, items.length);
+    async function workerFn() {
+      while (i < items.length) {
+        var idx = i++;
+        var out;
+        try { out = await worker(items[idx]); }
+        catch (e) { out = { name: items[idx].name, error: e }; }
+        if (out !== undefined) onResult(out, idx);
+      }
+    }
+    var jobs = [];
+    for (var w = 0; w < n; w++) jobs.push(workerFn());
+    await Promise.all(jobs);
+  }
+
+  /* ===================== 运行时状态 ===================== */
+  var state = {
+    batch: 0,
+    results: {},
+    filter: 'all',
+    view: 'grid',
+    controller: null,
+    reducedMotion: false
+  };
+  var ALL_DEP_ORDER = [];
+  var lastFocusedStone = null;
+
+  /* ===================== 稳定哈希（决定造型变体） ===================== */
+  function stableHash(value) {
+    var hash = 2166136261;
+    for (var i = 0; i < value.length; i++) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function stoneVariant(name) {
+    var hash = stableHash(name);
+    return {
+      shape: hash % 3,            // 0 圆顶 / 1 方顶 / 2 十字架
+      lean: (hash % 9) - 4,       // -4..4 度
+      rise: ((hash >>> 4) % 13) - 6, // 纵向偏移
+      depth: (hash >>> 9) % 3     // 0 后 / 1 中 / 2 前
+    };
+  }
+
+  /* ===================== 墓碑 SVG（4 状态 × 3 变体） ===================== */
+  function stoneSVG(status, variant) {
+    var common = 'viewBox="0 0 80 96" aria-hidden="true"';
+    var top = variant === 0 ? 'a23 23 0 0 1 46 0' : variant === 1 ? 'h46' : 'a23 23 0 0 1 46 0';
+    var topPath = variant === 1
+      ? 'M17 87V34h46V87z'
+      : 'M17 87V34a23 23 0 0 1 46 0V87z';
+    switch (status) {
+      case 'alive':
+        return '<svg ' + common + '>'
+          + '<ellipse cx="40" cy="88" rx="31" ry="5" fill="#090b0c" opacity=".62"/>'
+          + '<path d="' + topPath + '" fill="var(--stone)" stroke="var(--stone-light)" stroke-width="2.4"/>'
+          + '<path d="M25 87V40h30v47" fill="none" stroke="#55475d" stroke-width="1.4"/>'
+          + '<path d="M10 87h60" stroke="#6b554f" stroke-width="4" stroke-linecap="round"/>' // 基座
+          + (variant === 2 ? '<path d="M40 20v12M35 26h10" stroke="var(--alive)" stroke-width="2.5" stroke-linecap="round"/>' : '')
+          + '<path d="M60 78v-18a6 6 0 0 0-12 0v18z" fill="#5c3d2c" stroke="var(--pumpkin-hot)" stroke-width="1.5"/>' // 南瓜灯
+          + '<circle cx="54" cy="64" r="5" fill="var(--pumpkin)" class="glow"/>'
+          + '<path d="M54 65c-3-4 0-8 1-11 4 5 4 8 0 11z" fill="var(--pumpkin-hot)" class="flame"/>'
+          + '</svg>';
+      case 'zombie':
+        return '<svg ' + common + '>'
+          + '<ellipse cx="40" cy="88" rx="31" ry="5" fill="#090b0c" opacity=".66"/>'
+          + '<path d="' + topPath + '" fill="#273027" stroke="var(--zombie)" stroke-width="2.6"/>'
+          + '<path d="M40 17v54m-15-18 15 18 15-29" stroke="#3d4a3a" stroke-width="2" fill="none"/>' // 裂缝
+          + '<path d="M18 79c-2-12 2-22 6-27m4 34c-2-16 5-27 10-31" stroke="var(--moss)" stroke-width="3.2" fill="none" stroke-linecap="round"/>' // 青苔
+          + (variant === 2 ? '<path d="M40 20v10M36 25h8" stroke="#5a7a4f" stroke-width="2" stroke-linecap="round" opacity=".6"/>' : '')
+          + '<path class="twitch" d="M50 88c-2-13 2-19 5-25 2-4 6-2 5 2 3-4 6-1 4 3 5-2 6 3 1 5 3 3 0 7-4 4l-3 11" fill="#779b67" stroke="#b9d38d" stroke-width="1.4"/>' // 手
+          + '</svg>';
+      case 'ghost':
+        return '<svg ' + common + '>'
+          + '<ellipse cx="40" cy="88" rx="26" ry="5" fill="#081020" opacity=".5"/>'
+          + (variant === 2
+              ? '<path class="floaty" d="M40 12v8M35 16h10" stroke="var(--ghost)" stroke-width="2.5" stroke-linecap="round" opacity=".5"/><path class="floaty" d="M18 74V40a22 22 0 0 1 44 0v34l-8-7-8 8-8-8-8 8-7-7z" fill="var(--ghost)" opacity=".28" stroke="#acd2ff" stroke-width="2.2" stroke-dasharray="4 3"/>'
+              : '<path class="floaty" d="M18 74V40a22 22 0 0 1 44 0v34l-8-7-8 8-8-8-8 8-7-7z" fill="var(--ghost)" opacity=".28" stroke="#acd2ff" stroke-width="2.2" stroke-dasharray="4 3"/>')
+          + '<path d="M24 70c12 6 26 6 35 0" fill="none" stroke="#b5dcff" opacity=".4"/>'
+          + '<circle cx="32" cy="44" r="3.8" fill="#c7e6ff"/>'
+          + '<circle cx="49" cy="44" r="3.8" fill="#c7e6ff"/>'
+          + '<path d="M26 78c9 8 24 8 34 0" fill="none" stroke="#6b9bde" opacity=".3" stroke-width="5" stroke-linecap="round"/>'
+          + '</svg>';
+      default: // dead
+        var rot = variant === 1 ? '-8 40 68' : variant === 2 ? '7 40 68' : '-3 40 68';
+        return '<svg ' + common + '>'
+          + '<ellipse cx="40" cy="88" rx="34" ry="5" fill="#090b0c" opacity=".7"/>'
+          + '<g transform="rotate(' + rot + ')">'
+          + '<path d="' + topPath + '" fill="#28242b" stroke="var(--dead)" stroke-width="2.4"/>'
+          + '<path d="M28 28h24m-12 0v28" stroke="#a79aa8" stroke-width="2.6" stroke-linecap="round"/>'
+          + '<path d="M18 86h45" stroke="#6b6273" stroke-width="4" stroke-linecap="round"/>'
+          + '<path class="web" d="M18 36c9 0 16 7 16 17m-16-9 16 9m-9-17v17" fill="none" stroke="#b3a4bc" opacity=".55" stroke-width=".8"/>' // 蜘蛛网
+          + '<path d="M55 24c6-6 12-2 9 3 6 0 7 8 0 8-4 0-8-2-10-5z" fill="#111016"/>' // 乌鸦
+          + '<circle cx="61" cy="27" r=".8" fill="var(--pumpkin)"/>'
+          + '</g>'
+          + '<path d="M12 88c10-5 45-5 57 0" fill="none" stroke="#536a48" stroke-width="2" stroke-linecap="round"/>' // 藤蔓
+          + '</svg>';
+    }
+  }
+
+  /* ===================== 图例小图标 ===================== */
+  function legendIcon(status) {
+    var c = 'viewBox="0 0 16 16" aria-hidden="true"';
+    switch (status) {
+      case 'alive': return '<svg ' + c + '><circle cx="8" cy="8" r="4" fill="var(--alive)"/><path d="M8 6c-2 2-2 4 0 5 2-1 2-3 0-5z" fill="var(--pumpkin-hot)"/></svg>';
+      case 'zombie': return '<svg ' + c + '><path d="M4 14c0-4 1-6 3-7 1 3 0 5-1 7zm6 0c0-4 1-6 3-7 1 3 0 5-1 7z" fill="var(--zombie)"/></svg>';
+      case 'ghost': return '<svg ' + c + '><path d="M3 13V7a5 5 0 0 1 10 0v6l-2-1-2 2-2-2-2 2z" fill="var(--ghost)" opacity=".5" stroke="var(--ghost)"/><circle cx="6.5" cy="8" r="1" fill="#c7e6ff"/><circle cx="10" cy="8" r="1" fill="#c7e6ff"/></svg>';
+      case 'dead': return '<svg ' + c + '><path d="M8 3v10M5 6h6" stroke="var(--dead)" stroke-width="1.8" stroke-linecap="round"/></svg>';
+      case 'local': return '<svg ' + c + '><path d="M3 13V6l5-3 5 3v7z" fill="none" stroke="var(--fg-mute)" stroke-width="1.5"/></svg>';
+      case 'error': return '<svg ' + c + '><path d="M8 3l5 9H3z" fill="none" stroke="var(--bad)" stroke-width="1.5"/><path d="M8 7v3M8 11v.5" stroke="var(--bad)" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      default: return '';
+    }
+  }
+
+  function fmtNum(n) {
+    if (n == null || isNaN(n)) return '—';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+    return String(n);
+  }
+
+  function metaLine(res) {
+    if (!res) return '';
+    if (res.local) return '本地';
+    if (res.notFound) return '未找到';
+    if (res.httpError || res.status === 'error') return '读取失败';
+    var m = STATUS_META[res.status];
+    if (!m) return '';
+    if (res.status === 'alive' && res.lastPublishTime) {
+      var d = new Date(res.lastPublishTime);
+      return m.label + ' · ' + d.getFullYear() + '年' + (d.getMonth() + 1) + '月';
+    }
+    if (res.status === 'zombie') return m.label + ' · ' + fmtNum(res.weeklyDownloads) + '/周';
+    if (res.status === 'dead') return m.label + ' · 长眠';
+    return m.label;
+  }
+
+  function buildStone(dep) {
+    var res = state.results[dep.name] || {};
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'stone-btn';
+    btn.setAttribute('role', 'listitem');
+    btn.dataset.name = dep.name;
+
+    var local = !!res.local;
+    var isErr = !!(res.notFound || res.httpError || res.status === 'error');
+    var showStatus = local ? 'dead' : (isErr ? 'dead' : (res.status || 'dead'));
+    var visual = stoneVariant(dep.name);
+    var depthClass = visual.depth === 0 ? 'depth-back' : (visual.depth === 2 ? 'depth-front' : 'depth-mid');
+    btn.classList.add('status-' + showStatus, depthClass);
+    btn.style.setProperty('--lean', visual.lean + 'deg');
+    btn.style.setProperty('--rise', visual.rise + 'px');
+
+    var aria;
+    if (local) aria = dep.name + '，本地或私有依赖，未查询 npm。';
+    else if (isErr) aria = dep.name + '，' + (res.notFound ? '注册表中未找到' : '读取失败');
+    else {
+      var m = STATUS_META[res.status] || STATUS_META.dead;
+      var when = res.lastPublishTime ? new Date(res.lastPublishTime).toLocaleDateString('zh-CN', { year: 'numeric', month: 'short' }) : '未知';
+      aria = dep.name + '，' + m.label + '，最后发布于 ' + when;
+    }
+    btn.setAttribute('aria-label', aria);
+
+    var svgWrap = document.createElement('span');
+    svgWrap.className = 'svgwrap';
+    svgWrap.innerHTML = stoneSVG(showStatus, visual.shape);
+
+    var engrave = document.createElement('span');
+    engrave.className = 'engrave';
+    engrave.textContent = dep.name;
+    var small = document.createElement('small');
+    small.textContent = metaLine(res);
+    engrave.appendChild(small);
+    svgWrap.appendChild(engrave);
+
+    btn.appendChild(svgWrap);
+    btn.addEventListener('click', function () { lastFocusedStone = btn; openDetail(dep); });
+    return btn;
+  }
+
+  /* ===================== 汇总 ===================== */
+  function renderSummary() {
+    var counts = { alive: 0, zombie: 0, ghost: 0, dead: 0, local: 0, error: 0 };
+    ALL_DEP_ORDER.forEach(function (dep) {
+      var r = state.results[dep.name];
+      if (!r) return;
+      if (r.local) counts.local++;
+      else if (r.status === 'alive' || r.status === 'zombie' || r.status === 'ghost' || r.status === 'dead') counts[r.status]++;
+      else counts.error++;
+    });
+    var total = ALL_DEP_ORDER.length;
+    var bar = $('summarybar'), tb = $('toolbar');
+    if (total === 0) { bar.hidden = true; tb.hidden = true; return; }
+    bar.hidden = false; tb.hidden = false;
+    $('sum-total').textContent = total + ' 个依赖';
+    var order = [['alive', '活着'], ['zombie', '僵尸'], ['ghost', '幽灵'], ['dead', '已死'], ['local', '本地'], ['error', '异常']];
+    var html = '';
+    order.forEach(function (o) {
+      html += '<span>' + legendIcon(o[0]) + o[1] + ' ' + (counts[o[0]] || 0) + '</span>';
+    });
+    $('legend').innerHTML = html;
+
+    // 彩蛋：全部活着 / 全部已死
+    var scenic = $('scene-note');
+    if (total > 0 && counts.alive === total) scenic.textContent = '这里没有亡魂，每一座碑都亮着灯。';
+    else if (total > 0 && counts.dead === total) scenic.textContent = '整片墓地沉入黑暗，雾变得更浓了。';
+    else scenic.textContent = '';
+  }
+
+  /* ===================== 筛选 ===================== */
+  function filterPass(dep, res) {
+    var f = state.filter;
+    if (f === 'all') return true;
+    if (f === 'local') return !!res.local;
+    if (f === 'error') return !!(res.notFound || res.httpError || res.status === 'error');
+    return res.status === f;
+  }
+
+  /* ===================== 墓地渲染 ===================== */
+  function renderGraveyard() {
+    var g = $('graveyard');
+    g.innerHTML = '';
+    var shown = 0;
+    ALL_DEP_ORDER.forEach(function (dep) {
+      var res = state.results[dep.name];
+      if (!res || !filterPass(dep, res)) return;
+      var stone = buildStone(dep);
+      stone.style.animationDelay = (Math.min(shown, 24) * 0.05) + 's';
+      g.appendChild(stone);
+      shown++;
+    });
+    var empty = $('empty');
+    if (ALL_DEP_ORDER.length === 0) {
+      empty.hidden = false;
+      empty.querySelector('.big').textContent = '这里还很安静。';
+      empty.querySelector('.sub').textContent = '还没有任何依赖。粘贴你的 package.json，或点上方「来点陪葬品」。';
+    } else if (shown === 0) {
+      empty.hidden = false;
+      empty.querySelector('.big').textContent = '这里什么都没有……';
+      empty.querySelector('.sub').textContent = '没有符合当前筛选的墓碑。';
+    } else {
+      empty.hidden = true;
+    }
+  }
+
+  /* ===================== 表格渲染 ===================== */
+  function renderTable() {
+    var tb = $('tbody');
+    tb.innerHTML = '';
+    ALL_DEP_ORDER.forEach(function (dep) {
+      var res = state.results[dep.name];
+      if (!res || !filterPass(dep, res)) return;
+      var tr = document.createElement('tr');
+      var c = function (text) { var td = document.createElement('td'); td.textContent = text; return td; };
+      tr.appendChild(c(dep.name));
+      tr.appendChild(c(dep.kind === 'dependency' ? 'dependencies' : 'devDependencies'));
+      var tdSt = document.createElement('td');
+      var chip = document.createElement('span'); chip.className = 'chip';
+      if (res.local) { chip.textContent = '本地/私有'; chip.classList.add('local'); }
+      else if (res.notFound) { chip.textContent = '未找到'; chip.classList.add('err'); }
+      else if (res.httpError || res.status === 'error') { chip.textContent = '读取失败'; chip.classList.add('err'); }
+      else { var m = STATUS_META[res.status] || STATUS_META.dead; chip.textContent = m.label; chip.classList.add(m.cls); }
+      tdSt.appendChild(chip);
+      tr.appendChild(tdSt);
+      tr.appendChild(c(res.lastPublishTime ? new Date(res.lastPublishTime).toLocaleDateString('zh-CN') : '—'));
+      tr.appendChild(c(res.weeklyDownloads != null ? fmtNum(res.weeklyDownloads) : '—'));
+      tr.appendChild(c(res.deprecated ? truncate(res.deprecated, 40) : (res.local ? '未查询 npm' : '')));
+      tb.appendChild(tr);
+    });
+  }
+
+  function truncate(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+  /* ===================== 详情面板 ===================== */
+  function openDetail(dep) {
+    var res = state.results[dep.name] || {};
+    var title = $('detail-title');
+    var range = $('detail-range');
+    var epi = $('detail-epi');
+    var dl = $('detail-dl');
+    var link = $('detail-link');
+    var alt = $('detail-alt');
+    var pkg = dep.name;
+
+    title.textContent = dep.name;
+    title.style.color = '';
+    range.textContent = '范围 ' + dep.range + (dep.kind === 'dependency' ? ' · dependencies' : ' · devDependencies');
+    dl.innerHTML = '';
+
+    function row(dt, dd, cls) {
+      var div = document.createElement('div');
+      var d1 = document.createElement('dt'); d1.textContent = dt;
+      var d2 = document.createElement('dd'); d2.textContent = dd;
+      if (cls) d2.className = cls;
+      div.appendChild(d1); div.appendChild(d2); dl.appendChild(div);
+    }
+
+    if (res.local) {
+      epi.textContent = EPITAPHS.local;
+      row('类型', '本地 / 私有');
+      link.style.display = 'none'; alt.style.display = 'none';
+    } else if (res.notFound) {
+      epi.textContent = EPITAPHS.notfound;
+      row('状态', '注册表中未找到');
+      link.style.display = 'inline-block'; alt.style.display = 'inline-block';
+    } else if (res.httpError || res.status === 'error') {
+      epi.textContent = EPITAPHS.error;
+      row('状态', '读取失败' + (res.httpError ? ' (HTTP ' + res.httpError + ')' : ''));
+      link.style.display = 'inline-block'; alt.style.display = 'inline-block';
+    } else {
+      var m = STATUS_META[res.status] || STATUS_META.dead;
+      title.style.color = m.color;
+      epi.textContent = EPITAPHS[res.status];
+      row('状态', m.label);
+      row('最后发布', res.lastPublishTime ? new Date(res.lastPublishTime).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) : '尚未发布');
+      row('近一周下载', res.weeklyDownloads != null ? fmtNum(res.weeklyDownloads) : '—');
+      if (res.deprecated) row('deprecated', truncate(res.deprecated, 60), 'mute');
+      row('备注', '这只是维护活跃度，不是安全审计。', 'mute');
+      link.style.display = 'inline-block'; alt.style.display = 'inline-block';
+    }
+
+    link.href = 'https://www.npmjs.com/package/' + encodeURIComponent(pkg);
+    alt.href = 'https://www.npmjs.com/search?q=' + encodeURIComponent(pkg);
+    $('overlay').classList.add('open');
+    $('detail-close').focus();
+  }
+
+  function closeDetail() {
+    $('overlay').classList.remove('open');
+    if (lastFocusedStone) lastFocusedStone.focus();
+  }
+
+  /* ===================== 主流程 ===================== */
+  async function run(input) {
+    var parsed;
+    try { parsed = parsePackageJson(input); }
+    catch (e) {
+      $('statusline').innerHTML = '<span class="pick">⛏</span> 解析失败：' + e.message + '。你的输入仍在框里，请修改后重试。';
+      return;
+    }
+    if (input.length > 1024 * 1024) {
+      $('statusline').textContent = '输入超过 1MB，本工具拒绝处理以免卡顿。请精简。';
+      return;
+    }
+
+    var batch = ++state.batch;
+    if (state.controller) state.controller.abort();
+    var controller = new AbortController();
+    state.controller = controller;
+
+    ALL_DEP_ORDER = parsed;
+    document.body.classList.toggle('crowded', parsed.length > 60);
+    state.results = {};
+    state.filter = 'all';
+    syncFilterUI();
+
+    parsed.forEach(function (dep) {
+      var alias = aliasedName(dep.range);
+      if (alias) dep.queryName = alias;
+      if (isNonRegistryRange(dep.range) && !alias) {
+        state.results[dep.name] = { name: dep.name, local: true };
+      }
+    });
+
+    $('statusline').innerHTML = '解析出 ' + parsed.length + ' 个依赖，开始挖坟……';
+    $('digbar').classList.add('show');
+    $('summarybar').hidden = true;
+    $('toolbar').hidden = true;
+    renderGraveyard();
+    renderTable();
+    renderSummary();
+
+    var registryDeps = parsed.filter(function (d) { return !state.results[d.name]; });
+
+    try {
+      await runConcurrent(registryDeps, 6, async function (dep) {
+        if (controller.signal.aborted) return undefined;
+        var queryName = dep.queryName || dep.name;
+        return await fetchPackageHealth(queryName, controller.signal);
+      }, function (out) {
+        if (batch !== state.batch || !out) return;
+        var target = ALL_DEP_ORDER.find(function (d) { return (d.queryName || d.name) === out.name; }) ||
+                     ALL_DEP_ORDER.find(function (d) { return d.name === out.name; });
+        if (!target) return;
+        var res = out;
+        if (res.notFound) res.status = 'notfound';
+        else if (res.httpError) res.status = 'error';
+        else if (res.error) res.status = 'error';
+        else res.status = classify(res);
+        state.results[target.name] = res;
+        renderGraveyard();
+        renderTable();
+        renderSummary();
+      });
+
+      if (batch === state.batch) {
+        var done = registryDeps.length;
+        $('statusline').innerHTML = '探访完成。' + parsed.length + ' 个依赖已落土。';
+        $('digbar').classList.remove('show');
+        renderGraveyard();
+        renderTable();
+        renderSummary();
+      }
+    } catch (e) {
+      if (controller.signal.aborted) {
+        $('statusline').textContent = '已取消上一次探访。';
+      } else {
+        $('statusline').textContent = '出现网络错误：' + (e && e.message || e);
+      }
+      $('digbar').classList.remove('show');
+    }
+  }
+
+  function syncFilterUI() {
+    document.querySelectorAll('.filt').forEach(function (f) {
+      f.classList.toggle('on', f.dataset.filter === state.filter);
+    });
+  }
+
+  /* ===================== 键盘导航 ===================== */
+  $('graveyard').addEventListener('keydown', function (e) {
+    var stones = Array.prototype.slice.call(this.querySelectorAll('.stone-btn'));
+    var idx = stones.indexOf(document.activeElement);
+    var dir = null;
+    if (e.key === 'ArrowRight') dir = 1;
+    else if (e.key === 'ArrowLeft') dir = -1;
+    else if (e.key === 'ArrowDown') dir = Math.ceil(Math.sqrt(stones.length));
+    else if (e.key === 'ArrowUp') dir = -Math.ceil(Math.sqrt(stones.length));
+    if (dir === null || idx === -1) return;
+    e.preventDefault();
+    var next = Math.min(Math.max(idx + dir, 0), stones.length - 1);
+    stones[next].focus();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $('overlay').classList.contains('open')) closeDetail();
+  });
+  $('detail-close').addEventListener('click', closeDetail);
+  $('overlay').addEventListener('click', function (e) { if (e.target === this) closeDetail(); });
+
+  /* ===================== 工具栏事件 ===================== */
+  document.querySelectorAll('.filt').forEach(function (f) {
+    f.addEventListener('click', function () {
+      state.filter = f.dataset.filter;
+      syncFilterUI();
+      renderGraveyard();
+      renderTable();
+    });
+  });
+
+  $('toggle-table').addEventListener('click', function () {
+    state.view = state.view === 'table' ? 'grid' : 'table';
+    this.classList.toggle('on', state.view === 'table');
+    $('graveyard').classList.toggle('hide', state.view === 'table');
+    $('tableview').classList.toggle('show', state.view === 'table');
+    if (state.view === 'table') renderTable();
+  });
+
+  $('toggle-motion').addEventListener('click', function () {
+    state.reducedMotion = !state.reducedMotion;
+    document.body.classList.toggle('reduce-motion', state.reducedMotion);
+    this.classList.toggle('on', state.reducedMotion);
+  });
+
+  /* ===================== 彩蛋：点击月亮蝙蝠齐飞 ===================== */
+  $('moon').addEventListener('click', function () {
+    var bats = $('bats');
+    bats.querySelectorAll('.bat').forEach(function (b) {
+      b.style.animation = 'none';
+      void b.offsetWidth; // reflow
+      b.style.animation = '';
+      b.style.scale = '1.4';
+      setTimeout(function () { b.style.scale = ''; }, 600);
+    });
+  });
+
+  /* ===================== 星星 ===================== */
+  function paintStars() {
+    var host = $('stars');
+    host.innerHTML = '';
+    for (var i = 0; i < 70; i++) {
+      var s = document.createElement('span');
+      var cross = i % 11 === 0;
+      s.className = 'star' + (cross ? ' cross' : '');
+      s.style.left = (Math.random() * 100) + '%';
+      s.style.top = (Math.random() * 55) + '%';
+      if (!cross) {
+        var sz = 1 + Math.random() * 2;
+        s.style.width = sz + 'px';
+        s.style.height = sz + 'px';
+      }
+      s.style.animationDelay = (Math.random() * 5) + 's';
+      s.style.animationDuration = (4 + Math.random() * 4) + 's';
+      s.style.animationName = 'twinkle';
+      s.style.animationIterationCount = 'infinite';
+      s.style.animationTimingFunction = 'ease-in-out';
+      host.appendChild(s);
+    }
+  }
+
+  /* ===================== 场景彩蛋提示行 ===================== */
+  var sceneNote = document.createElement('div');
+  sceneNote.id = 'scene-note';
+  sceneNote.style.cssText = 'text-align:center;color:var(--pumpkin-hot);font:italic 15px "Cormorant Garamond",serif;margin:6px 0 0;min-height:22px;';
+  $('statusline').parentNode.insertBefore(sceneNote, $('statusline').nextSibling);
+
+  /* ===================== 输入事件 ===================== */
+  $('btn-example').addEventListener('click', function () { $('pkg-input').value = EXAMPLE; $('pkg-input').focus(); });
+  $('btn-clear').addEventListener('click', function () { $('pkg-input').value = ''; $('pkg-input').focus(); });
+  $('btn-submit').addEventListener('click', function () { run($('pkg-input').value); });
+
+  /* ===================== 初始化 ===================== */
+  paintStars();
+  renderGraveyard();
+})();
+</script>
+</body>
+</html>

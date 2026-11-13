@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="lost-title">
+  <title id="lost-title">Lost: a will-o'-wisp shaped like a question mark</title>
+  <defs>
+    <radialGradient id="lost-aura-grad">
+      <stop offset="0" stop-color="#b8a9d9" stop-opacity=".45"/>
+      <stop offset=".55" stop-color="#b8a9d9" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#b8a9d9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <style>
+    @media (prefers-reduced-motion: no-preference) {
+      .lost-aura { transform-box: view-box; transform-origin: 32px 34px; animation: lost-aura 3.4s ease-in-out infinite; }
+      .lost-drift { animation: lost-drift 5s ease-in-out infinite; }
+      .lost-flame { transform-box: view-box; transform-origin: 32px 50px; animation: lost-flicker 1.8s ease-in-out infinite; }
+      .lost-mote { animation: lost-mote 2.8s ease-in infinite; }
+      @keyframes lost-aura {
+        0%, 100% { opacity: .6; transform: scale(.94); }
+        50% { opacity: 1; transform: scale(1.05); }
+      }
+      @keyframes lost-drift {
+        0%, 100% { transform: translate(0, 0); }
+        25% { transform: translate(-2.5px, -1.5px); }
+        50% { transform: translate(0, -3px); }
+        75% { transform: translate(2.5px, -1.5px); }
+      }
+      @keyframes lost-flicker {
+        0%, 100% { transform: skewX(0deg) scaleY(1); }
+        35% { transform: skewX(-3deg) scaleY(1.04); }
+        70% { transform: skewX(2deg) scaleY(.97); }
+      }
+      @keyframes lost-mote {
+        0% { opacity: 0; transform: translateY(0); }
+        30% { opacity: .9; }
+        100% { opacity: 0; transform: translateY(5px); }
+      }
+    }
+  </style>
+
+  <circle class="lost-aura" cx="32" cy="34" r="27" fill="url(#lost-aura-grad)"/>
+
+  <g class="lost-drift">
+    <g class="lost-flame">
+      <path d="M33 4 C41 14 47 23 47 35 A15 15 0 0 1 17 35 C17 25 24 21 26.5 13 C29 17.5 32 14 33 4 Z" fill="#b8a9d9" stroke="#1a1424" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M32.5 16 C37.5 22 41 27 41 35 A9 9 0 0 1 23 35 C23 29 27 26 28.5 21 C30.5 23.5 32 21 32.5 16 Z" fill="#e4dcf5"/>
+    </g>
+    <path d="M27.5 31.5 Q27.5 26.5 32 26.5 Q36.5 26.5 36.5 30.5 Q36.5 33.5 32 35 L32 38.5" fill="none" stroke="#2a1b3d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="32" cy="43.5" r="1.9" fill="#2a1b3d"/>
+  </g>
+
+  <g fill="#b8a9d9">
+    <circle class="lost-mote" cx="24" cy="55" r="1.2" opacity=".5"/>
+    <circle class="lost-mote" cx="39" cy="57" r=".9" opacity=".5" style="animation-delay:1.3s"/>
+  </g>
+</svg>

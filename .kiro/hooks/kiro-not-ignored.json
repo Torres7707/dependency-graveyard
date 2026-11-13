@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Block commits that leave .kiro out",
+      "description": "Before the agent runs git commit, make sure .kiro/ is not ignored and its files are staged or tracked. Exit 2 blocks the command.",
+      "trigger": "PreToolUse",
+      "matcher": "shell",
+      "action": { "type": "command", "command": "node scripts/check-kiro-tracked.mjs --hook" },
+      "timeout": 30
+    }
+  ]
+}

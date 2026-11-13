@@ -1,0 +1,13 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Property tests on status-rule change",
+      "description": "When classify, its config or types change, run the fast-check properties for classify and parse.",
+      "trigger": "PostFileSave",
+      "matcher": "src/domain/(classify|config|types|parse)(\\.property)?(\\.test)?\\.ts$",
+      "action": { "type": "command", "command": "pnpm -s test:pbt" },
+      "timeout": 120
+    }
+  ]
+}

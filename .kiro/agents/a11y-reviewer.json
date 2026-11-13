@@ -1,0 +1,21 @@
+{
+  "name": "a11y-reviewer",
+  "description": "Read-only accessibility review of UI changes against .kiro/steering/accessibility.md. Run after any change under src/ui, src/graves, src/scene, src/app or src/styles.",
+  "prompt": "file://./prompts/a11y-reviewer.md",
+  "tools": ["read", "shell"],
+  "permissions": {
+    "rules": [
+      { "capability": "fs_read", "match": ["**"], "effect": "allow" },
+      { "capability": "fs_write", "match": ["**"], "effect": "deny" },
+      { "capability": "shell", "match": ["git diff*", "git status*", "git log*", "pnpm -s test*", "pnpm -s typecheck*", "pnpm -s lint*"], "effect": "allow" },
+      { "capability": "shell", "match": ["*"], "effect": "ask" }
+    ]
+  },
+  "resources": [
+    "file://.kiro/steering/accessibility.md",
+    "file://.kiro/steering/design-system.md",
+    "file://.kiro/steering/copy-voice.md",
+    "file://src/styles/index.css"
+  ],
+  "welcomeMessage": "Accessibility review. Tell me what changed, or I will review the current git diff."
+}
